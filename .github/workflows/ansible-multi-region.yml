@@ -1,0 +1,75 @@
+name: Ansible Multi-Region CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Job to check Ansible code syntax and style
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Run Ansible Lint
+        uses: ansible/ansible-lint@v25.5.0
+        with:
+          args: 'playbooks/'
+
+  # Job to configure EC2 instances across multiple regions
+  configure-ec2:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        aws_region: ["us-east-1", "us-west-2", "eu-central-1"] # Add all your regions here
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Set up Ansible and Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install ansible
+
+      - name: Run EC2 Playbook
+        run: ansible-playbook -i inventory/ec2_instances.ini playbooks/instance_config.yml
+        env:
+          AWS_REGION: ${{ matrix.aws_region }} # Pass the region to Ansible
+
+  # Job to enforce S3 policies across multiple regions
+  enforce-s3-policies:
+    needs: configure-ec2
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        aws_region: ["us-east-1", "us-west-2", "eu-central-1"] # Match the regions here
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ matrix.aws_region }} # Use the region from the matrix
+      
+      - name: Set up Ansible and Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install ansible community.aws
+      
+      - name: Run S3 Policy Playbook
+        run: ansible-playbook playbooks/s3_policy.yml
