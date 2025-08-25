@@ -1,0 +1,13 @@
+---
+- name: Create a new user for CI/CD
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the 'cicduser' user exists
+      ansible.builtin.user:
+        name: cicduser
+        state: present
+        comment: "CI/CD user for automation"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
