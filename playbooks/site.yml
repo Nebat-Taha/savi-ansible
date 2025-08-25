@@ -1,12 +1,13 @@
 ---
-- name: Apply EC2 instance configurations
-  hosts: all
-  become: yes
-  roles:
-    - ec2_user_mgmt
 
 - name: Enforce AWS API policies
   hosts: localhost
   gather_facts: yes
   roles:
     - s3_policy_enforcement
+
+- name: Apply EC2 instance configurations
+  hosts: all
+  become: yes
+  roles:
+    - ec2_user_mgmt
