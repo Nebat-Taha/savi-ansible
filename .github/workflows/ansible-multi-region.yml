@@ -39,6 +39,8 @@ jobs:
           python-version: '3.x'
       - run: pip install ansible 
       - run: ansible-galaxy collection install community.aws
+      - run: ansible-galaxy collection install community.general
+      - run: ansible-galaxy collection install community.general-extras
       - run: pip install boto3 botocore
       
       - name: Run Master Playbook
