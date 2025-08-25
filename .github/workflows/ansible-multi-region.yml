@@ -1,12 +1,14 @@
 name: Ansible Multi-Region CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+
+  #push:
+    #branches:
+      #- main
+  #pull_request:
+    #branches:
+      #- main
 
 jobs:
   # Job to orchestrate all configurations across multiple regions
