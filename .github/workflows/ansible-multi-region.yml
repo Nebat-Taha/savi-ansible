@@ -42,6 +42,6 @@ jobs:
       - run: pip install boto3 botocore
       
       - name: Run Master Playbook
-        run: ansible-playbook -i inventory/ playbooks/site.yml
+        run: ansible-playbook -i inventory/ playbooks/site.yml --extra-vars "ansible_roles_path=roles"
         env:
           AWS_REGION: ${{ matrix.aws_region }}
