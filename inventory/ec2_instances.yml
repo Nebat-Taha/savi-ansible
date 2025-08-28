@@ -1,4 +1,8 @@
 ec2:
   hosts:
     54.167.17.162:
+      ansible_user: ubuntu 
     18.193.125.21:
+      ansible_user: ubuntu
+       
+  
