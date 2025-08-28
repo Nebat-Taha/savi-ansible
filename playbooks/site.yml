@@ -1,6 +1,6 @@
 ---
 - name: Apply EC2 instance configurations
-  hosts: app
+  hosts: ec2
   become: yes
   roles:
     - ec2_user_mgmt
