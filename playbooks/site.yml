@@ -5,11 +5,10 @@
   roles:
     - ec2_user_mgmt
 
-- name: Enforce AWS API policies
-  hosts: localhost
-  connection: local
-  become: yes
-  gather_facts: yes
-  roles:
-    - s3_policy_enforcement
+#- name: Enforce AWS API policies
+  #hosts: localhost
+  #connection: local
+  #gather_facts: yes
+  #roles:
+    #- s3_policy_enforcement
 
