@@ -44,6 +44,6 @@ jobs:
       - name: Run Master Playbook
         run: ansible-playbook ansible/playbooks/site.yml
         env:
-          ANSIBLE_CONFIG: Ansible/ansible.cfg
+          ANSIBLE_CONFIG: ansible/ansible.cfg
           AWS_REGION: ${{ matrix.aws_region }}
         #continue-on-error: true
