@@ -42,7 +42,8 @@ jobs:
       - run: pip install boto3 botocore
       
       - name: Run Master Playbook
-        run: ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml 
+        run: ansible-playbook ansible/playbooks/site.yml
         env:
+          ANSIBLE_CONFIG: Ansible/ansible.cfg
           AWS_REGION: ${{ matrix.aws_region }}
         #continue-on-error: true
