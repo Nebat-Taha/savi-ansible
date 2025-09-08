@@ -4,11 +4,20 @@
     name: mongod
     state: started
   become: true
-  
-- name: Ensure mongodump is installed
+
+- name: Ensure mongodump and python-pip are installed
   ansible.builtin.package:
-    name: mongodb-database-tools
+    name:
+      - mongodb-database-tools
+      - python3-pip
     state: present
+  become: true
+  
+- name: Install Backblaze B2 CLI via pip
+  ansible.builtin.pip:
+    name: b2
+    state: present
+    executable: pip3
   become: true
 
 - name: Create local backup directory
