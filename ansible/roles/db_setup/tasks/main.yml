@@ -7,11 +7,13 @@
   
 - name: Create a test database and a collection with documents
   community.mongodb.mongodb_shell:
-    database: testdb
-    command: 'db.testcollection.insertMany([{ name: "ansible_test_data", value: 100 }, { name: "another_test_doc", value: 200 }])'
-  register: insert_result
-  failed_when: "'acknowledged: false' in insert_result.stdout"
-  
+    db: testdb
+    eval: 'db.testcollection.insertMany([{ name: "ansible_test_data", value: 100 }, { name: "another_test_doc", value: 200 }])'
+  become: true
+
 - name: Verify data insertion
-  ansible.builtin.debug:
-    msg: "Data inserted successfully: {{ insert_result.stdout }}"
+  community.mongodb.mongodb_shell:
+    db: testdb
+    eval: 'db.testcollection.find().count()'
+  register: count_result
+  failed_when: "count_result.stdout == '0'"
