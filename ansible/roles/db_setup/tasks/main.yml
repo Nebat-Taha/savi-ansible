@@ -5,13 +5,21 @@
     state: started
   become: true
 
-- name: Configure MongoDB to listen on all interfaces
+- name: Configure MongoDB to listen on all interfaces and restart service
   ansible.builtin.replace:
     path: /etc/mongod.conf
     regexp: '^  bindIp: 127.0.0.1'
     replace: '  bindIp: 0.0.0.0'
   become: true
-  #notify: Restart MongoDB
+  register: config_changed
+  
+- name: Restart MongoDB service after configuration change
+  ansible.builtin.service:
+    name: mongod
+    state: restarted
+  become: true
+  when: config_changed.changed
+  
 
 - name: Create a test database and a collection with documents
   community.mongodb.mongodb_shell:
