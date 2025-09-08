@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        aws_region: ["us-east-1", "eu-central-1"]
+        aws_region: ["us-east-1"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
