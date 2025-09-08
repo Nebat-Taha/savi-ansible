@@ -11,8 +11,8 @@
     regexp: '^  bindIp: 127.0.0.1'
     replace: '  bindIp: 0.0.0.0'
   become: true
-  notify: Restart MongoDB
-    
+  #notify: Restart MongoDB
+
 - name: Create a test database and a collection with documents
   community.mongodb.mongodb_shell:
     db: testdb
