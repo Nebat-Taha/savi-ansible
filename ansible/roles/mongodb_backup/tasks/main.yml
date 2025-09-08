@@ -5,11 +5,11 @@
     state: started
   become: true
 
-- name: Ensure mongodump and b2sdk are installed
+- name: Ensure mongodump and b2 are installed
   ansible.builtin.package:
     name:
       - mongodb-database-tools
-      - b2sdk
+      - backblaze-b2 #package name for the Backblaze B2 command-line differs based on OS
     state: present
   become: true
 
