@@ -13,19 +13,13 @@
   become: true
   register: config_changed
   
-- name: Restart MongoDB service after configuration change
-  ansible.builtin.service:
-    name: mongod
-    state: restarted
-  become: true
-  when: config_changed.changed
   
 - name: Restart MongoDB service
   ansible.builtin.service:
     name: mongod
     state: restarted
   become: true
-  
+
 - name: Create a test database and a collection with documents
   community.mongodb.mongodb_shell:
     db: testdb
