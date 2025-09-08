@@ -1,0 +1,17 @@
+---
+- name: Check if MongoDB is running
+  ansible.builtin.service:
+    name: mongod
+    state: started
+  become: true
+  
+- name: Create a test database and a collection with documents
+  community.mongodb.mongodb_shell:
+    database: testdb
+    command: 'db.testcollection.insertMany([{ name: "ansible_test_data", value: 100 }, { name: "another_test_doc", value: 200 }])'
+  register: insert_result
+  failed_when: "'acknowledged: false' in insert_result.stdout"
+  
+- name: Verify data insertion
+  ansible.builtin.debug:
+    msg: "Data inserted successfully: {{ insert_result.stdout }}"

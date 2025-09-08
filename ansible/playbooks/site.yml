@@ -1,4 +1,12 @@
 ---
+- name: Set up MongoDB database with test data
+  hosts: mongodb_servers
+  become: yes
+  tags:
+    - db_setup
+  roles:
+    - db_setup
+    
 - name: Backup MongoDB instances
   hosts: mongodb_servers  # <-- New host group
   become: yes
