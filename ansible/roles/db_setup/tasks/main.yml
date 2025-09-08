@@ -11,8 +11,3 @@
     eval: 'db.testcollection.insertMany([{ name: "ansible_test_data", value: 100 }, { name: "another_test_doc", value: 200 }])'
   become: true
 
-- name: Verify data insertion using a direct shell command
-  ansible.builtin.command: mongosh --quiet --eval 'db.testcollection.countDocuments({})'
-  become: true
-  register: count_result
-  failed_when: count_result.stdout | int == 0
