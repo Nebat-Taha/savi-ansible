@@ -16,4 +16,4 @@
     db: testdb
     eval: 'db.testcollection.countDocuments({})'
   register: count_result
-  failed_when: count_result.output | int == 0
+  failed_when: count_result.stdout_lines[0] | int == 0
