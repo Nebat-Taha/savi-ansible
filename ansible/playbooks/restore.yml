@@ -1,0 +1,14 @@
+---
+- name: Restore MongoDB instances
+  hosts: mongodb_servers
+  become: yes
+  tags: mongodb_restore
+  roles:
+    - mongodb_restore
+
+- name: Restore Redis instances
+  hosts: redis_servers
+  become: yes
+  tags: redis_restore
+  roles:
+    - redis_restore

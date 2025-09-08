@@ -1,0 +1,35 @@
+---
+- name: Ensure b2sdk is installed
+  ansible.builtin.pip:
+    name: b2sdk
+    state: present
+  become: true
+
+- name: Download Redis backup file
+  ansible.builtin.command: |
+    b2 download-file --no-progress b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} dump.rdb /tmp/dump.rdb
+  environment:
+    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
+    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+
+- name: Copy dump file to Redis data directory
+  ansible.builtin.copy:
+    src: /tmp/dump.rdb
+    dest: /var/lib/redis/dump.rdb
+    remote_src: yes
+  become: true
+
+- name: Stop Redis and load dump file
+  ansible.builtin.command: redis-cli --host {{ ansible_host }} --port 6379 SHUTDOWN NOSAVE
+  become: true
+  
+- name: Start Redis after shutdown
+  ansible.builtin.service:
+    name: redis
+    state: started
+  become: true
+
+- name: Validate that keys exist
+  ansible.builtin.command: redis-cli --host {{ ansible_host }} --port 6379 INFO keyspace
+  register: keys_info
+  failed_when: "'db0:keys=0' in keys_info.stdout"

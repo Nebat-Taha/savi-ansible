@@ -1,0 +1,29 @@
+---
+- name: Ensure mongorestore is installed
+  ansible.builtin.package:
+    name: mongodb-database-tools
+    state: present
+  become: yes
+
+- name: Ensure b2sdk is installed for Backblaze download
+  ansible.builtin.pip:
+    name: b2sdk
+    state: present
+  become: yes
+
+- name: Create local restore directory
+  ansible.builtin.file:
+    path: /tmp/mongodb_restore
+    state: directory
+    mode: '0755'
+
+- name: Download MongoDB backup from Backblaze B2
+  ansible.builtin.command: |
+    b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    b2 sync b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} /tmp/mongodb_restore
+  environment:
+    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
+    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+
+- name: Restore MongoDB from backup
+  ansible.builtin.command: mongorestore --uri "mongodb://{{ ansible_host }}:27017" /tmp/mongodb_restore/

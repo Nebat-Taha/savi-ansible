@@ -1,0 +1,13 @@
+---
+- name: Send email notification on backup failure
+  ansible.builtin.mail:
+    host: smtp.your-mail-provider.com
+    port: 587
+    username: your-email-username
+    password: your-email-password
+    from: noreply@yourdomain.com
+    to: admin@yourdomain.com
+    subject: "MongoDB Backup Failure Alert"
+    body: "An automated MongoDB backup has failed for {{ ansible_host }}. Please check the pipeline logs for details."
+  delegate_to: localhost
+  when: ansible_failed_task is defined

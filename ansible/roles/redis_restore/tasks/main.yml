@@ -1,0 +1,37 @@
+---
+- name: Ensure b2sdk is installed for Backblaze download
+  ansible.builtin.pip:
+    name: b2sdk
+    state: present
+  become: yes
+
+- name: Get Redis dump file path
+  ansible.builtin.command: redis-cli --host {{ ansible_host }} CONFIG GET dir
+  register: redis_dir_output
+
+- name: Download Redis backup from Backblaze B2
+  ansible.builtin.command: |
+    b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    b2 download-file --no-progress b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} dump.rdb /tmp/redis_restore/dump.rdb
+  environment:
+    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
+    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+
+- name: Stop Redis service
+  ansible.builtin.service:
+    name: redis
+    state: stopped
+  become: yes
+
+- name: Copy downloaded dump file to Redis directory
+  ansible.builtin.copy:
+    src: /tmp/redis_restore/dump.rdb
+    dest: "{{ redis_dir_output.stdout_lines[1] }}/dump.rdb"
+    remote_src: yes
+  become: yes
+
+- name: Start Redis service
+  ansible.builtin.service:
+    name: redis
+    state: started
+  become: yes

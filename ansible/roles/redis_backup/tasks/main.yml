@@ -1,0 +1,25 @@
+---
+- name: Save Redis database to disk
+  ansible.builtin.command: redis-cli --host {{ ansible_host }} SAVE
+
+- name: Ensure b2sdk is installed for Backblaze upload
+  ansible.builtin.pip:
+    name: b2sdk
+    state: present
+  become: yes
+
+- name: Get Redis dump file path
+  ansible.builtin.command: redis-cli --host {{ ansible_host }} CONFIG GET dir
+  register: redis_dir_output
+
+- name: Set Redis dump file variable
+  set_fact:
+    redis_dump_file: "{{ redis_dir_output.stdout_lines[1] }}/dump.rdb"
+
+- name: Upload Redis backup to Backblaze B2
+  ansible.builtin.command: |
+    b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    b2 upload-file --no-progress b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} {{ redis_dump_file }}
+  environment:
+    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
+    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"

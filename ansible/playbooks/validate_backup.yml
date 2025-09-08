@@ -1,0 +1,16 @@
+---
+- name: Validate MongoDB Backup
+  hosts: test_mongodb_servers
+  become: yes
+  vars:
+    database_type: mongodb
+  roles:
+    - db_backup_validate
+
+- name: Validate Redis Backup
+  hosts: test_redis_servers
+  become: yes
+  vars:
+    database_type: redis
+  roles:
+    - db_backup_validate

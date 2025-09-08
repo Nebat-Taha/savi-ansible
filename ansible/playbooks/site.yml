@@ -1,4 +1,16 @@
 ---
+- name: Backup MongoDB instances
+  hosts: mongodb_servers  # <-- New host group
+  become: yes
+  roles:
+    - mongodb_backup
+
+- name: Backup Redis instances
+  hosts: redis_servers    # <-- New host group
+  become: yes
+  roles:
+    - redis_backup
+
 - name: Apply EC2 instance configurations
   hosts: ec2
   become: yes

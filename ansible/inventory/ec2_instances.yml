@@ -1,8 +1,15 @@
-ec2:
-  hosts:
-    54.167.17.162:
-      ansible_user: ubuntu 
-    18.193.125.21:
-      ansible_user: ubuntu
-       
-  
+---
+all:
+  children:
+    mongodb_servers:
+      hosts:
+        9.10.11.12:
+    redis_servers:
+      hosts:
+        13.14.15.16:
+    ec2:
+      hosts:
+        54.167.17.162:
+          ansible_user: ubuntu 
+        18.193.125.21:
+          ansible_user: ubuntu

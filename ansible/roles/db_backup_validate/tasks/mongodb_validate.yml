@@ -1,0 +1,29 @@
+---
+- name: Ensure mongorestore is installed
+  ansible.builtin.package:
+    name: mongodb-database-tools
+    state: present
+  become: true
+
+- name: Create local temp directory for restore
+  ansible.builtin.file:
+    path: /tmp/mongodb_restore
+    state: directory
+
+- name: Download MongoDB backup
+  ansible.builtin.command: |
+    b2 sync b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} /tmp/mongodb_restore
+  environment:
+    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
+    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+
+- name: Restore MongoDB dump to a test database
+  ansible.builtin.command: mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --nsFrom="*.*" --nsTo="testdb.*" /tmp/mongodb_restore
+  become: true
+
+- name: Check document count in a collection
+  community.mongodb.mongodb_shell:
+    database: testdb
+    command: db.your_collection_name.countDocuments({})
+  register: doc_count
+  failed_when: doc_count.stdout == "0"

@@ -1,0 +1,8 @@
+---
+- name: Set up environment for MongoDB validation
+  ansible.builtin.include_tasks: mongodb_validate.yml
+  when: database_type == 'mongodb'
+
+- name: Set up environment for Redis validation
+  ansible.builtin.include_tasks: redis_validate.yml
+  when: database_type == 'redis'
