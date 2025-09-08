@@ -3,7 +3,7 @@ all:
   children:
     mongodb_servers:
       hosts:
-        9.10.11.12:
+        3.80.216.196: 
     redis_servers:
       hosts:
         13.14.15.16:
