@@ -14,6 +14,6 @@
 - name: Verify data insertion
   community.mongodb.mongodb_shell:
     db: testdb
-    eval: 'db.testcollection.find().count()'
+    eval: 'db.testcollection.countDocuments({})'
   register: count_result
-  failed_when: "count_result.stdout == '0'"
+  failed_when: count_result.output | int == 0
