@@ -15,5 +15,6 @@
   community.mongodb.mongodb_shell:
     db: testdb
     eval: 'db.testcollection.countDocuments({})'
+    transform: raw
   register: count_result
-  failed_when: count_result.stdout_lines[0] | int == 0
+  failed_when: count_result.stdout | int == 0

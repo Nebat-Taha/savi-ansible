@@ -7,7 +7,6 @@ on:
         description: 'Select database to restore'
         required: true
         type: choice
-        default: choose database
         options:
           - mongodb
           - redis
