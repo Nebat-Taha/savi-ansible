@@ -14,7 +14,7 @@
   become: true
 
 - name: Find the b2 executable path
-  ansible.builtin.shell: which b2
+  ansible.builtin.command: find / -name b2 -type f -perm /111 2>/dev/null
   become: false
   register: b2_path
   changed_when: false
