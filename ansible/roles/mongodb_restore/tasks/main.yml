@@ -34,6 +34,18 @@
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
+  register: download_result
+  failed_when: "'downloaded' not in download_result.stdout"
+
+- name: Verify downloaded file is a valid gzip archive
+  ansible.builtin.shell: |
+    file /tmp/mongodb_restore/backup.gz
+  register: file_check
+  become: true
+
+- name: Print file type for debugging
+  ansible.builtin.debug:
+    var: file_check.stdout
 
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
