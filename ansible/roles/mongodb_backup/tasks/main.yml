@@ -28,6 +28,7 @@
 - name: Create MongoDB dump with a unique name
   ansible.builtin.shell: |
     mongodump --uri "mongodb://{{ ansible_host }}:27017" --archive=/tmp/mongodb-backup-{{ ansible_date_time.iso8601_basic_short }}.gz
+    echo "/tmp/mongodb-backup-{{ ansible_date_time.iso8601_basic_short }}.gz"
   register: backup_file_info
   become: true
 
