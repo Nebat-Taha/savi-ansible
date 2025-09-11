@@ -1,7 +1,8 @@
 ---
 - name: Ensure mongorestore is installed
   ansible.builtin.package:
-    name: mongodb-database-tools
+    name: 
+      - mongodb-database-tools
     state: present
   become: yes
 
@@ -17,13 +18,29 @@
     state: directory
     mode: '0755'
 
-- name: Download MongoDB backup from Backblaze B2
-  ansible.builtin.command: |
-    b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-    b2 sync b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} /tmp/mongodb_restore
-  environment:
-    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
-    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+- name: Authorize Backblaze B2 CLI
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+  become: true
 
-- name: Restore MongoDB from backup
-  ansible.builtin.command: mongorestore --uri "mongodb://{{ ansible_host }}:27017" /tmp/mongodb_restore/
+- name: Find the most recent backup file in the Backblaze bucket
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $NF}'
+  become: true
+  register: latest_backup_file
+
+- name: Download the latest backup from Backblaze B2
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 download-file --bucket nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
+  become: true
+
+- name: Restore MongoDB from the downloaded backup
+  ansible.builtin.shell: |
+    mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --gzip --archive=/tmp/mongodb_restore/backup.gz
+  become: true
+
+- name: Clean up local restore directory
+  ansible.builtin.file:
+    path: /tmp/mongodb_restore
+    state: absent
+  become: true
