@@ -6,8 +6,8 @@
   become: yes
 
 - name: Ensure b2sdk is installed for Backblaze download
-  ansible.builtin.pip:
-    name: b2sdk
+  ansible.builtin.package:
+    name: backblaze-b2
     state: present
   become: yes
 
