@@ -26,9 +26,9 @@
 
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $NF}'
+    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $2}'
   become: true
-  register: latest_backup_file
+  register: latest_backup_file_id
 
 - name: Download the latest backup from Backblaze B2 using file ID
   ansible.builtin.shell: |
