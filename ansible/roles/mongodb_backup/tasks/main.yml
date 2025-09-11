@@ -13,11 +13,11 @@
     state: present
   become: true
 
-- name: Find the b2 executable path
-  ansible.builtin.shell: find / -name b2 -type f -perm /111 2>/dev/null
-  become: false
-  register: b2_path
-  changed_when: false
+#- name: Find the b2 executable path
+  #ansible.builtin.shell: find / -name b2 -type f -perm /111 2>/dev/null
+  #become: false
+  #register: b2_path
+  #changed_when: false
 
 - name: Create local backup directory
   ansible.builtin.file:
@@ -33,7 +33,7 @@
 
 - name: Upload MongoDB backup to Backblaze B2
   ansible.builtin.command: |
-    {{ b2_path.stdout }} upload-file {{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} {{ backup_file_info.stdout }} {{ backup_file_info.stdout | basename }}
+    /usr/bin/backblaze-b2 upload-file {{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} {{ backup_file_info.stdout }} {{ backup_file_info.stdout | basename }}
   environment:
     B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
     B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
