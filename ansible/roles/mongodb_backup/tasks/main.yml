@@ -32,6 +32,10 @@
   register: backup_file_info
   become: true
 
+- name: Debug Backblaze environment variables
+  ansible.builtin.debug:
+    var: lookup('env', 'BACKBLAZE_APPLICATION_KEY')
+    
 - name: Authorize Backblaze B2 CLI
   ansible.builtin.command: |
     /usr/bin/backblaze-b2 authorize-account

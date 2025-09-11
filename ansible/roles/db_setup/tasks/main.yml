@@ -20,10 +20,14 @@
     state: restarted
   become: true
 
+- name: Reset SSH connection after service restart
+  ansible.builtin.meta:
+    reset_connection
+    
 - name: Wait for MongoDB to start
   ansible.builtin.pause:
     seconds: 10
-    
+
 - name: Create a test database and a collection with documents
   community.mongodb.mongodb_shell:
     db: testdb
