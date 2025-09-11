@@ -24,6 +24,16 @@
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
   become: true
 
+- name: List files in the Backblaze bucket for debugging
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 ls nebatn
+  become: true
+  register: b2_ls_output
+
+- name: Print bucket list for debugging
+  ansible.builtin.debug:
+    var: b2_ls_output.stdout_lines
+
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $2}'
@@ -36,16 +46,6 @@
   become: true
   register: download_result
   failed_when: "'checksum matches' not in download_result.stdout"
-
-- name: Verify downloaded file is a valid gzip archive
-  ansible.builtin.shell: |
-    file /tmp/mongodb_restore/backup.gz
-  register: file_check
-  become: true
-
-- name: Print file type for debugging
-  ansible.builtin.debug:
-    var: file_check.stdout
 
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
