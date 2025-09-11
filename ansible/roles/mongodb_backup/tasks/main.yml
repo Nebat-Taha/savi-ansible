@@ -33,7 +33,7 @@
 
 - name: Upload MongoDB backup to Backblaze B2
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 upload-file {{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} {{ backup_file_info.stdout }} {{ backup_file_info.stdout | basename }}
+    /usr/bin/backblaze-b2 upload-file "{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }}" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
   environment:
     B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
     B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
