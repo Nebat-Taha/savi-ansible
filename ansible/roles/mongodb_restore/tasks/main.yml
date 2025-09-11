@@ -32,7 +32,7 @@
 
 - name: Download the latest backup from Backblaze B2
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 download-file nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
+    /usr/bin/backblaze-b2 download-file --bucket nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
 
 - name: Restore MongoDB from the downloaded backup
