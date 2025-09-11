@@ -18,7 +18,7 @@ jobs:
     # This is the key part for multi-region support
     strategy:
       matrix:
-        aws_region: ["us-east-1", "eu-central-1"]
+        aws_region: ["us-east-1"]
 
     steps:
       - name: Checkout repository
