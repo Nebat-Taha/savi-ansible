@@ -17,6 +17,14 @@
     state: present
   become: true
 
+
+# This task ensures that the 'certifi' package is installed for SSL certificate verification
+- name: Ensure Python certifi package is installed
+  ansible.builtin.pip:
+    name: certifi
+    state: present
+  become: true
+  
 # creates a temporary directory  where the MongoDB dump will be stored before being uploaded
 - name: Create local backup directory
   ansible.builtin.file:
