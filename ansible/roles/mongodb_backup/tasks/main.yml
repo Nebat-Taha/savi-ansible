@@ -1,60 +1,49 @@
 ---
+#This task ensures the MongoDB service is active before we attempt to interact with the database.
 - name: Ensure MongoDB service is running
   ansible.builtin.service:
     name: mongod
     state: started
   become: true
 
+# This task ensures that both the 'mongodb-database-tools' (for mongodump) and
+# the 'backblaze-b2' CLI are installed on the target server. 
+# This is a prerequisite for a successful backup.
 - name: Ensure mongodump and b2 are installed
   ansible.builtin.package:
     name:
       - mongodb-database-tools
-      - backblaze-b2 #package name for the Backblaze B2 command-line differs based on OS
+      - backblaze-b2 
     state: present
   become: true
 
-#- name: Find the b2 executable path
-  #ansible.builtin.shell: find / -name b2 -type f -perm /111 2>/dev/null
-  #become: false
-  #register: b2_path
-  #changed_when: false
-
+# creates a temporary directory  where the MongoDB dump will be stored before being uploaded
 - name: Create local backup directory
   ansible.builtin.file:
     path: /tmp/mongodb_backup
     state: directory
     mode: '0755'
-    
+
+# creates a MongoDB dump as a single archive file, using a timestamp in the filename for uniqueness.    
 - name: Create MongoDB dump with a unique name
   ansible.builtin.shell: |
     mongodump --uri "mongodb://{{ ansible_host }}:27017" --archive=/tmp/mongodb-backup-{{ ansible_date_time.iso8601_basic_short }}.gz
     echo "/tmp/mongodb-backup-{{ ansible_date_time.iso8601_basic_short }}.gz"
+# the echo outputs the full path to the newly created backup file which is captured by the variable "backup_file_info"
   register: backup_file_info
   become: true
 
-#- name: Debug Backblaze environment variables
-  #ansible.builtin.debug:
-    #var: lookup('env', 'BACKBLAZE_APPLICATION_KEY')
-
-#- name: Authorize Backblaze B2 CLI
-  #ansible.builtin.command: |
-    #/usr/bin/backblaze-b2 authorize-account
-  #environment:
-    #B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
-    #B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
-  #become: true
-
-#- name: Upload MongoDB backup to Backblaze B2
-  #ansible.builtin.shell: |
-    #/usr/bin/backblaze-b2 upload-file "{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }}" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
-  #become: true
-
+# # This task authenticates with Backblaze B2 and uploads the backup file. 
+#We use the 'lookup' function to access the 'BACKBLAZE_APPLICATION_KEY_ID' and 
+#'BACKBLAZE_APPLICATION_KEY' variables, which are configured as secrets in the CI/CD environment. 
+# "nebatn" here is the name of the bucket in the backblaze
 - name: Upload MongoDB backup to Backblaze B2
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }} && \
     /usr/bin/backblaze-b2 upload-file "nebatn" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
   become: true
 
+# removes the temporary directory and the backup file
 - name: Clean up local backup directory
   ansible.builtin.file:
     path: /tmp/mongodb_backup
