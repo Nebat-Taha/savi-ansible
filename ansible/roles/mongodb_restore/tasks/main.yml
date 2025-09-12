@@ -47,7 +47,7 @@
 
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
-    mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --gzip --archive=/tmp/mongodb_restore/backup.gz
+    mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
   become: true
 
 - name: Clean up local restore directory
