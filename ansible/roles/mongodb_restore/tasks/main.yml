@@ -26,7 +26,7 @@
 
 - name: List files in the Backblaze bucket for debugging
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn
+    /usr/bin/backblaze-b2 ls nebatn --long
   become: true
   register: b2_ls_output
 
@@ -36,7 +36,7 @@
 
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $2}'
+    /usr/bin/backblaze-b2 ls nebatn --long | tail -1 | awk '{print $2}'
   become: true
   register: latest_backup_file_id
 
@@ -46,6 +46,16 @@
   become: true
   register: download_result
   failed_when: "'checksum matches' not in download_result.stdout"
+
+- name: Verify downloaded file is a valid gzip archive
+  ansible.builtin.shell: |
+    file /tmp/mongodb_restore/backup.gz
+  register: file_check
+  become: true
+
+- name: Print file type for debugging
+  ansible.builtin.debug:
+    var: file_check.stdout
 
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
