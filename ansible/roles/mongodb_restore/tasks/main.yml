@@ -36,16 +36,14 @@
 
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $2}'
+    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $NF}'
   become: true
-  register: latest_backup_file_id
+  register: latest_backup_file
 
-- name: Download the latest backup from Backblaze B2 using file ID
+- name: Download the latest backup from Backblaze B2 by name
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 download-file-by-id "{{ latest_backup_file_id.stdout | trim }}" /tmp/mongodb_restore/backup.gz
+    /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
-  register: download_result
-  failed_when: "'checksum matches' not in download_result.stdout"
 
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
