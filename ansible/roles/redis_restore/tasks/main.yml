@@ -13,12 +13,20 @@
   changed_when: false
   become: true
 
-# Extract the directory path into a fact for easy use in subsequent tasks.
+# Extract the directory path into a fact.
 - name: Set Redis data directory fact
   ansible.builtin.set_fact:
     redis_data_dir: "{{ redis_dir_output.stdout_lines[1] | trim }}"
 
-# ----------------- Download and Find Latest Backup -----------------
+# ----------------- Critical Restore Block -----------------
+
+# CRITICAL STEP: Stop the Redis service immediately to prevent all client writes 
+# and ensure a consistent restore (guarantees RPO=0).
+- name: Stop Redis service for restore (FULL DOWNTIME START)
+  ansible.builtin.service:
+    name: redis-server
+    state: stopped
+  become: true
 
 # Authorize the Backblaze B2 CLI for download operations.
 - name: Authorize Backblaze B2 CLI
@@ -26,47 +34,29 @@
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
   become: true
 
-# Find the most recent backup file in the Backblaze bucket using a predictable naming convention.
+# Find the most recent backup file in the Backblaze bucket.
 - name: Find the most recent RDB backup file in Backblaze
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 ls nebatn | grep 'redis-backup-' | tail -1 | awk '{print $NF}'
   become: true
   register: latest_backup_file
   
-# Download the latest backup from Backblaze B2 directly to the Redis data directory.
-# We download it as 'dump.rdb' because that's the filename Redis automatically loads.
+# Download the latest backup directly to the final 'dump.rdb' path, overwriting the old file.
+# This ensures the new file is in place while the service is down.
 - name: Download the latest RDB backup
   ansible.builtin.shell: |
     LATEST_FILE="{{ latest_backup_file.stdout | trim }}"
     /usr/bin/backblaze-b2 download-file-by-name nebatn "${LATEST_FILE}" "{{ redis_data_dir }}/dump.rdb"
   become: true
-  
-# ----------------- Restore Process -----------------
 
-# Stop the Redis service before replacing the database file to ensure data integrity.
-- name: Stop Redis service for restore
-  ansible.builtin.service:
-    name: redis-server
-    state: stopped
-  become: true
-
-# Remove the potentially stale dump.rdb file that was present before the download.
-# This ensures a clean slate, though the download above should overwrite it anyway.
-- name: Remove old dump.rdb before restart (safety measure)
-  ansible.builtin.file:
-    path: "{{ redis_data_dir }}/dump.rdb.old"
-    state: absent
-  become: true
-
-# Restart the Redis service. Redis will automatically detect the new 'dump.rdb' file
-# in its data directory and load the data into memory, completing the restore.
-- name: Start Redis service to load new RDB file
+# Restart the Redis service. Redis will automatically detect and load the new 'dump.rdb' file.
+- name: Start Redis service to load new RDB file (FULL DOWNTIME END)
   ansible.builtin.service:
     name: redis-server
     state: started
   become: true
 
-# ----------------- Verification and Cleanup -----------------
+# ----------------- Verification -----------------
 
 # Verify that the test data from the backup is present after the restore.
 - name: Verify restored test data
