@@ -1,4 +1,12 @@
 ---
+# This task ensures the Redis service is active 
+# before any attempt to save or backup the data.
+- name: Ensure Redis service is running
+  ansible.builtin.service:
+    name: redis-server
+    state: started
+  become: true
+
 # This task ensures the Backblaze B2 CLI is installed on the host.
 - name: Ensure backblaze-b2 is installed
   ansible.builtin.package:
@@ -30,7 +38,7 @@
   ansible.builtin.find:
     paths: "{{ redis_data_dir }}"
     patterns: 'dump.rdb'
-    age: '-10m' # Ensure we only find a file recently created (within the last 10 minutes)
+    age: '-10m' # Ensure we only find a file recently created (within the last 10 minutes), increase the time if the backup takes more than 10 minutes to complete.
   register: rdb_file_info
 
 # This task uploads the Redis RDB file to Backblaze B2 with a unique, timestamped filename.

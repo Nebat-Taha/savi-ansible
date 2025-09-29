@@ -1,37 +1,79 @@
 ---
-- name: Ensure b2sdk is installed for Backblaze download
-  ansible.builtin.pip:
-    name: b2sdk
+# Ensure all necessary tools (Backblaze B2 CLI) are installed on the host.
+- name: Ensure backblaze-b2 is installed for download
+  ansible.builtin.package:
+    name: backblaze-b2
     state: present
-  become: yes
+  become: true
 
-- name: Get Redis dump file path
-  ansible.builtin.command: redis-cli --host {{ ansible_host }} CONFIG GET dir
+# Use the Redis CLI to determine the exact location where Redis expects the dump.rdb file.
+- name: Get Redis configuration directory (dir)
+  ansible.builtin.command: redis-cli CONFIG GET dir
   register: redis_dir_output
+  changed_when: false
+  become: true
 
-- name: Download Redis backup from Backblaze B2
-  ansible.builtin.command: |
-    b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-    b2 download-file --no-progress b2://{{ lookup('env', 'BACKBLAZE_BUCKET_NAME') }} dump.rdb /tmp/redis_restore/dump.rdb
-  environment:
-    B2_APPLICATION_KEY_ID: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}"
-    B2_APPLICATION_KEY: "{{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}"
+# Extract the directory path into a fact for easy use in subsequent tasks.
+- name: Set Redis data directory fact
+  ansible.builtin.set_fact:
+    redis_data_dir: "{{ redis_dir_output.stdout_lines[1] | trim }}"
 
-- name: Stop Redis service
+# ----------------- Download and Find Latest Backup -----------------
+
+# Authorize the Backblaze B2 CLI for download operations.
+- name: Authorize Backblaze B2 CLI
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+  become: true
+
+# Find the most recent backup file in the Backblaze bucket using a predictable naming convention.
+- name: Find the most recent RDB backup file in Backblaze
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 ls nebatn | grep 'redis-backup-' | tail -1 | awk '{print $NF}'
+  become: true
+  register: latest_backup_file
+  
+# Download the latest backup from Backblaze B2 directly to the Redis data directory.
+# We download it as 'dump.rdb' because that's the filename Redis automatically loads.
+- name: Download the latest RDB backup
+  ansible.builtin.shell: |
+    LATEST_FILE="{{ latest_backup_file.stdout | trim }}"
+    /usr/bin/backblaze-b2 download-file-by-name nebatn "${LATEST_FILE}" "{{ redis_data_dir }}/dump.rdb"
+  become: true
+  
+# ----------------- Restore Process -----------------
+
+# Stop the Redis service before replacing the database file to ensure data integrity.
+- name: Stop Redis service for restore
   ansible.builtin.service:
-    name: redis
+    name: redis-server
     state: stopped
-  become: yes
+  become: true
 
-- name: Copy downloaded dump file to Redis directory
-  ansible.builtin.copy:
-    src: /tmp/redis_restore/dump.rdb
-    dest: "{{ redis_dir_output.stdout_lines[1] }}/dump.rdb"
-    remote_src: yes
-  become: yes
+# Remove the potentially stale dump.rdb file that was present before the download.
+# This ensures a clean slate, though the download above should overwrite it anyway.
+- name: Remove old dump.rdb before restart (safety measure)
+  ansible.builtin.file:
+    path: "{{ redis_data_dir }}/dump.rdb.old"
+    state: absent
+  become: true
 
-- name: Start Redis service
+# Restart the Redis service. Redis will automatically detect the new 'dump.rdb' file
+# in its data directory and load the data into memory, completing the restore.
+- name: Start Redis service to load new RDB file
   ansible.builtin.service:
-    name: redis
+    name: redis-server
     state: started
-  become: yes
+  become: true
+
+# ----------------- Verification and Cleanup -----------------
+
+# Verify that the test data from the backup is present after the restore.
+- name: Verify restored test data
+  ansible.builtin.command: redis-cli GET test_key_1
+  register: redis_restore_check
+  changed_when: false
+  
+- name: Print restored data verification
+  ansible.builtin.debug:
+    msg: "Restore successful! Verified key: {{ redis_restore_check.stdout }}"
