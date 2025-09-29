@@ -1,4 +1,7 @@
 ---
+# ensures that the 'mongodb-database-tools' package, 
+# which contains the 'mongorestore' binary, is installed on the target server.
+
 - name: Ensure mongorestore is installed
   ansible.builtin.package:
     name:
@@ -6,11 +9,17 @@
     state: present
   become: true
 
+# ensures that the Backblaze B2 command-line tool is installed, 
+# as it is required to download the backup file from the cloud bucket.
+
 - name: Ensure b2 is installed for Backblaze download
   ansible.builtin.package:
     name: backblaze-b2
     state: present
   become: true
+
+# creates a temporary directory on the server to store the downloaded backup 
+# file before the restoration process begins.
 
 - name: Create local restore directory
   ansible.builtin.file:
@@ -18,21 +27,32 @@
     state: directory
     mode: '0755'
   become: true
-  
+
+# This task authenticates the Backblaze B2 CLI using secrets from the CI/CD environment.
+# This is a prerequisite for any file operations with the bucket.
+
 - name: Authorize Backblaze B2 CLI
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
   become: true
 
-- name: List files in the Backblaze bucket for debugging
+# This command collects a list of all files in the specified Backblaze B2 bucket ("nebatn")
+# and registers the output to the 'b2_ls_output' variable, which is then used to identify the most recent backup.
+
+- name: List files in the Backblaze bucket 
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 ls nebatn 
   become: true
   register: b2_ls_output
 
+# This task prints the list of available backups to the console. 
+
 - name: Print bucket list for debugging
   ansible.builtin.debug:
     var: b2_ls_output.stdout_lines
+
+# This command retrieves the filename of the most recently created backup file 
+# from the list of files in the bucket.
 
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
@@ -40,15 +60,25 @@
   become: true
   register: latest_backup_file
 
+# This task downloads the latest backup file from the Backblaze B2 bucket and 
+# saves it to a local temporary file on the server.
+
 - name: Download the latest backup from Backblaze B2 by name
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
 
+# This command uses 'mongorestore' to restore the downloaded backup. 
+# The '--drop' flag ensures the existing database is completely replaced. 
+# The restore connects to the MongoDB service via the instance's public IP.
+
 - name: Restore MongoDB from the downloaded backup
   ansible.builtin.shell: |
     mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
   become: true
+
+# This final step cleans up the local temporary directory and the downloaded 
+# backup file to save disk space.
 
 - name: Clean up local restore directory
   ansible.builtin.file:

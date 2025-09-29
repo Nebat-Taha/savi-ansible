@@ -1,0 +1,29 @@
+---
+# This task installs the Redis server and the Redis command-line interface (redis-cli)
+# using the system's package manager.
+- name: Ensure Redis server is installed
+  ansible.builtin.package:
+    name:
+      - redis-server
+    state: present
+  become: true
+
+# This task ensures that the Redis service is started and enabled to run automatically
+# at system boot.
+- name: Ensure Redis service is running and enabled
+  ansible.builtin.service:
+    name: redis-server
+    state: started
+    enabled: true
+  become: true
+
+# This task verifies the Redis service is running by using the 'redis-cli' to check its status.
+# The 'ping' command is used to confirm a connection can be established.
+- name: Check Redis service status
+  ansible.builtin.command: redis-cli ping
+  register: redis_ping_status
+  changed_when: false
+
+- name: Print Redis service status
+  ansible.builtin.debug:
+    var: redis_ping_status.stdout

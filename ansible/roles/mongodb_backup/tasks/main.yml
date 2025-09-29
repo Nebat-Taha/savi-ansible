@@ -18,15 +18,6 @@
   become: true
 
 
-# This task ensures that the 'certifi' package is installed for SSL certificate verification
-#- name: Ensure b2 is installed in a virtual environment
-  #ansible.builtin.pip:
-    #name: backblaze-b2
-    #state: present
-    #virtualenv: /usr/local/b2_venv
-    #virtualenv_python: python3
-  #become: true
-
 # creates a temporary directory  where the MongoDB dump will be stored before being uploaded
 - name: Create local backup directory
   ansible.builtin.file:
