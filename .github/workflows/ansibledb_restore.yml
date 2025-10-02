@@ -1,42 +1,54 @@
+# -----------------------------------------------------------------------------
+# WORKFLOW: Ansible Database Restore (ansibledb_restore.yml)
+#
+# PURPOSE:  Provides a safe, manual mechanism for operators to restore a database
+#           from a cloud backup (Backblaze B2) in a disaster recovery scenario.
+#           This workflow enforces intentionality by requiring a manual trigger
+#           and explicit selection of the target database and region.
+#
+# TRIGGER:  Manually via workflow_dispatch (GitHub Actions UI).
+#
+# INPUTS:   'database' (choice: mongodb or redis), **'aws_region' (allows region selection)**
+#
+# ARCHITECTURE: **Uses a strategy matrix and manual inputs to dynamically target**
+#               **a specific region and database.** It executes the corresponding
+#               Ansible restore role (mongodb_restore or redis_restore) on the server.
+#
+# License: MIT License
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# -----------------------------------------------------------------------------
+
 name: Ansible Database Restore
 
 on:
   workflow_dispatch:
-
-  #push:
-    #branches:
-      #- main
-  #pull_request:
-    #branches:
-      #- main
-   #inputs:
-      #database:
-        #description: "Select database to restore"
-        #required: true
-        #type: choice
-        #options:
-          #- mongodb
-          #- redis
-      # User selects the target AWS region for the restore job.
-      #aws_region:
-        #description: "Select target AWS region for the restore"
-        #required: true
-        #type: choice
-        #options:
-          #- us-east-1
-          #- eu-central-1 # Assuming this is your second supported region
- 
-          
+    inputs:
+      database:
+        description: "Select database to restore"
+        required: true
+        type: choice
+        options:
+          - mongodb
+          - redis
+      # Allow the user to select the target AWS region for the restore
+      aws_region:
+        description: "Select target AWS region for the restore"
+        required: true
+        type: choice
+        options:
+          - us-east-1
+          - eu-central-1 
+          # Add more regions as needed
 jobs:
   restore-database:
     runs-on: ubuntu-latest
-    
+
     # This is the key part for multi-region support
     strategy:
-      # new-line add for savi as well
       matrix:
-        # The region matrix is driven by the user's manual selection input.
-        aws_region: [${{ github.event.inputs.aws_region }}]
+        aws_region: ["us-east-1"]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,23 +56,31 @@ jobs:
       - name: Set up SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
+          # SSH private key used by Ansible to connect to and manage remote EC2 instances.
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          
-      - name: Configure Backblaze B2 credentials
+
+      - name:
+          Configure Backblaze B2 credentials
+          # Loads the Backblaze B2 Application Key ID and the corresponding Backblaze B2 Application Key
+          # from GitHub Secrets into the runner's environment for use by the b2sdk/backblaze-b2 CLI during the download task.
         run: |
           echo "BACKBLAZE_APPLICATION_KEY_ID=${{ secrets.BACKBLAZE_APPLICATION_KEY_ID }}" >> $GITHUB_ENV
           echo "BACKBLAZE_APPLICATION_KEY=${{ secrets.BACKBLAZE_APPLICATION_KEY }}" >> $GITHUB_ENV
-      
+
       - name: Set up Ansible and Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-          
+          python-version: "3.x"
+
       - name: Install Ansible and dependencies
         run: pip install ansible b2sdk
-          
+
       - name: Run Restore Playbook for Selected Database
+        # Executes the restore playbook, passing the selected database (e.g., mongodb_restore)
+        # as a tag to ensure only the necessary role runs.
         run: ansible-playbook -i ansible/inventory/ ansible/playbooks/restore.yml --tags ${{ inputs.database }}_restore
         env:
+          # Specifies the path to the main Ansible configuration file used to define default behaviors.
           ANSIBLE_CONFIG: ansible/ansible.cfg
-          AWS_REGION: ${{ matrix.aws_region }} # This variable is now defined by the matrix
+          # Passes the selected region to Ansible, used for resource targeting and lookup.
+          AWS_REGION: ${{ matrix.aws_region }}
