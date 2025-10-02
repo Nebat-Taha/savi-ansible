@@ -11,13 +11,13 @@ on:
           - mongodb
           - redis
       # User selects the target AWS region for the restore job.
-      aws_region:
-        description: "Select target AWS region for the restore"
-        required: true
-        type: choice
-        options:
-          - us-east-1
-          - eu-central-1 # Assuming this is your second supported region
+      #aws_region:
+        #description: "Select target AWS region for the restore"
+        #required: true
+        #type: choice
+        #options:
+          #- us-east-1
+          #- eu-central-1 # Assuming this is your second supported region
  
           
 jobs:
