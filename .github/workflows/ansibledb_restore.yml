@@ -2,24 +2,23 @@ name: Ansible Database Restore
 
 on:
   workflow_dispatch:
-    inputs:
+   inputs:
       database:
-        description: 'Select database to restore'
+        description: "Select database to restore"
         required: true
         type: choice
         options:
           - mongodb
           - redis
-        # Allow the user to select the target AWS region for the restore
+      # User selects the target AWS region for the restore job.
       aws_region:
         description: "Select target AWS region for the restore"
         required: true
         type: choice
         options:
           - us-east-1
-          - eu-central-1
-          # Add more regions as needed
-      
+          - eu-central-1 # Assuming this is your second supported region
+ 
           
 jobs:
   restore-database:
