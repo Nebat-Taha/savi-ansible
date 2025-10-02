@@ -3,8 +3,12 @@ name: Ansible Database Restore
 on:
   workflow_dispatch:
 
-
-  
+  #push:
+    #branches:
+      #- main
+  #pull_request:
+    #branches:
+      #- main
    #inputs:
       #database:
         #description: "Select database to restore"
