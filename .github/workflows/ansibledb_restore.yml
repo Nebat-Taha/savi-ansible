@@ -10,16 +10,19 @@ on:
         options:
           - mongodb
           - redis
-
+      
+      
+          
 jobs:
   restore-database:
     runs-on: ubuntu-latest
     
     # This is the key part for multi-region support
     strategy:
+      # new-line add for savi as well
       matrix:
-        aws_region: ["us-east-1"]
-
+        # The region matrix is driven by the user's manual selection input.
+        aws_region: [${{ github.event.inputs.aws_region }}]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
