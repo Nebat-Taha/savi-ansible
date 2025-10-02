@@ -10,7 +10,15 @@ on:
         options:
           - mongodb
           - redis
-      
+        # Allow the user to select the target AWS region for the restore
+      aws_region:
+        description: "Select target AWS region for the restore"
+        required: true
+        type: choice
+        options:
+          - us-east-1
+          - eu-central-1
+          # Add more regions as needed
       
           
 jobs:
