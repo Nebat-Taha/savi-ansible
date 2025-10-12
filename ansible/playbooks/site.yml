@@ -26,6 +26,12 @@
     - mongodb_backup_ssh
   tags:
     - mongodb_backup
+  handlers:
+    - name: Kill MongoDB SSH Tunnel Process
+      ansible.builtin.command: "kill -9 {{ hostvars['localhost']['mongodb_tunnel_pid'] }}"
+      when: hostvars['localhost']['mongodb_tunnel_pid'] is defined and hostvars['localhost']['mongodb_tunnel_pid'] | length > 0
+      changed_when: true  
+
 
 - name: Tear down SSH Tunnel
   hosts: localhost
