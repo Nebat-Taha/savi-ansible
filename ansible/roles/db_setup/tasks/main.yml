@@ -4,7 +4,7 @@
 # The service cannot be started if the package is not installed.
 # =============================================================================
 
-# 1. Install Prerequisites (Already OK)
+# 1. Install Prerequisites
 - name: Install gnupg and necessary packages
   ansible.builtin.apt:
     name:
@@ -14,10 +14,10 @@
     update_cache: yes
   become: true
 
-# 2. Download and Add the official MongoDB GPG Key (Using apt-key is deprecated)
-# This uses the modern way to add a key to /etc/apt/keyrings/
+# 2. Download and Add the official MongoDB GPG Key (Modern Method)
 - name: Add MongoDB GPG key (modern method)
   ansible.builtin.shell: |
+    # Download key and use gpg to store it securely in /etc/apt/keyrings/
     curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
       sudo gpg --dearmor -o /etc/apt/keyrings/mongodb-server-7.0.gpg
   args:
@@ -25,13 +25,13 @@
   become: true
   changed_when: true
 
-# 3. Add MongoDB Repository (Targets 'noble' 24.04 using the correct format)
-- name: Add MongoDB repository for Ubuntu 24.04
+# 3. Add MongoDB Repository (Targets 'jammy' codename)
+- name: Add MongoDB repository for Ubuntu 24.04 (using jammy mirror)
   ansible.builtin.apt_repository:
-    # Use the 'noble' codename, specify the signed key, and use the correct URL structure.
-    repo: 'deb [ signed-by=/etc/apt/keyrings/mongodb-server-7.0.gpg, arch=amd64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse'
+    # Use the 'jammy' (22.04) codename for the repository path, as 'noble' is not yet published.
+    repo: 'deb [ signed-by=/etc/apt/keyrings/mongodb-server-7.0.gpg, arch=amd64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse'
     state: present
-    filename: 'mongodb-org-7.0' # Use a specific filename for the source list
+    filename: 'mongodb-org-7.0'
   become: true
 
 # 4. Install MongoDB
@@ -40,6 +40,7 @@
     name: mongodb-org
     state: present
   become: true
+  register: mongodb_install_status # Register the result
 
 # ... (Continue with your existing service and configuration tasks)
 
