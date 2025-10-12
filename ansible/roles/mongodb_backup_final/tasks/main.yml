@@ -75,8 +75,3 @@
     state: absent
   become: true
 
-# Final task required to signal completion and tear down the SSH tunnel
-- name: Signal completion to trigger tunnel teardown
-  ansible.builtin.command: "echo 'Backup complete. Signalling tunnel teardown.'"
-  changed_when: true
-  #notify: "Kill MongoDB SSH Tunnel Process"
