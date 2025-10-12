@@ -59,6 +59,12 @@
     /usr/bin/backblaze-b2 ls nebatn mongodb/ | tail -1 | awk '{print $NF}'
   become: true
   register: latest_backup_file
+  
+# NEW TASK: Print the specific filename/path that will be downloaded
+# --------------------------------------------------------------------------
+- name: ECHO the full B2 path being downloaded
+  ansible.builtin.debug:
+    msg: "B2 Download Path: {{ latest_backup_file.stdout | trim }}"
 
 # This task downloads the latest backup file from the Backblaze B2 bucket and 
 # saves it to a local temporary file on the server.
