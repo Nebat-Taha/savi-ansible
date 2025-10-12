@@ -4,5 +4,6 @@
 # -----------------------------------------------------------------------------
 - name: Notify handler to kill the background SSH tunnel
   ansible.builtin.command: "echo 'Triggering tunnel teardown handler'"
+  connection: local 
   changed_when: true
   notify: "Kill MongoDB SSH Tunnel Process" # This name matches the handler name
