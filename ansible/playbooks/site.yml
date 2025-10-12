@@ -29,6 +29,8 @@
   handlers:
     - name: Kill MongoDB SSH Tunnel Process
       ansible.builtin.command: "kill -9 {{ hostvars['localhost']['mongodb_tunnel_pid'] }}"
+      delegate_to: localhost               # <--- ADD THIS LINE
+      run_once: true                     # <--- ADD THIS LINE (Good practice)
       when: hostvars['localhost']['mongodb_tunnel_pid'] is defined and hostvars['localhost']['mongodb_tunnel_pid'] | length > 0
       changed_when: true  
 
