@@ -41,7 +41,7 @@
 
 - name: List files in the Backblaze bucket 
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn 
+    /usr/bin/backblaze-b2 ls nebatn mpngodb/
   become: true
   register: b2_ls_output
 
@@ -56,7 +56,7 @@
 
 - name: Find the most recent backup file in the Backblaze bucket
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn | tail -1 | awk '{print $NF}'
+    /usr/bin/backblaze-b2 ls nebatn mongodb/ | tail -1 | awk '{print $NF}'
   become: true
   register: latest_backup_file
 
