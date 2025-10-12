@@ -51,11 +51,11 @@
     state: started
   become: true
 
-- name: Configure MongoDB to listen on all interfaces and restart service
+- name: Configure MongoDB to listen ONLY on localhost (127.0.0.1) for security
   ansible.builtin.replace:
     path: /etc/mongod.conf
-    regexp: '^  bindIp: 127.0.0.1'
-    replace: '  bindIp: 0.0.0.0'
+    regexp: '^  bindIp: [0-9.]+' # Matches 0.0.0.0, 127.0.0.1, etc.
+    replace: '  bindIp: 127.0.0.1' # Securely binds to loopback only
   become: true
   register: config_changed
   
