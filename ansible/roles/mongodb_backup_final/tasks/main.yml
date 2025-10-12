@@ -44,7 +44,7 @@
 # =================================================================================
 # Creates a MongoDB dump as a single archive file. The connection URI uses 127.0.0.1:27017,
 # which is securely forwarded by the SSH tunnel to the remote MongoDB instance.
-- name: Create MongoDB dump with a unique name (via SSH Tunnel)
+- name: Create MongoDB dump with a unique name 
   ansible.builtin.shell: |
     # The --uri uses localhost (127.0.0.1), which is routed by the tunnel.
     mongodump --uri "mongodb://127.0.0.1:27017" --archive=/tmp/mongodb-backup-{{ ansible_date_time.iso8601_basic_short }}.gz
@@ -61,10 +61,7 @@
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }} && \
     /usr/bin/backblaze-b2 upload-file "nebatn" "{{ backup_file_info.stdout | trim }}" \ "mongodb/{{ backup_file_info.stdout | basename | trim }}"
   
-#/usr/bin/backblaze-b2 upload-file nebatn "{{ backup_filename.stdout | trim }}" "mongodb/{{ backup_filename.stdout | trim }}"
- 
- # /usr/bin/backblaze-b2 upload-file "nebatn" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
-  
+
   # NOTE: 'nebatn' is a placeholder bucket name. Substitute it with your actual bucket name.
   become: true
 
