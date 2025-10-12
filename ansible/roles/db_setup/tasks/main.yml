@@ -1,4 +1,39 @@
 ---
+# =============================================================================
+# ⚠️ MISSING STEP: MongoDB Installation Tasks ⚠️
+# The service cannot be started if the package is not installed.
+# =============================================================================
+
+# 1. Install Prerequisites (Ensure necessary components are available)
+- name: Install gnupg and necessary packages
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - curl
+    state: present
+    update_cache: yes
+  become: true
+
+# 2. Add MongoDB GPG Key (Required for secure repository access)
+- name: Add MongoDB GPG key
+  ansible.builtin.apt_key:
+    url: https://www.mongodb.org/static/pgp/server-6.0.asc
+    state: present
+  become: true
+
+# 3. Add MongoDB Repository (Tells the package manager where to find the package)
+- name: Add MongoDB repository
+  ansible.builtin.apt_repository:
+    repo: 'deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse'
+    state: present
+  become: true
+
+# 4. Install MongoDB (The actual package installation)
+- name: Ensure MongoDB is installed (mongodb-org)
+  ansible.builtin.package:
+    name: mongodb-org
+    state: present
+  become: true
 - name: Check if MongoDB is running
   ansible.builtin.service:
     name: mongod
