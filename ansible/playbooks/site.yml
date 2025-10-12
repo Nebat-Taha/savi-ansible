@@ -11,6 +11,10 @@
 - name: Set up secure SSH Tunnel for MongoDB
   hosts: localhost
   gather_facts: false
+  vars:                    # <-- Defines variables for the role
+    mongodb_host_ip: "{{ groups['mongodb_servers'][0] }}"
+    ssh_local_port: 27017
+    ssh_remote_port: 27017
   roles:
     - tunnel_management # ESTABLISHES the tunnel and SETS the PID fact.
 

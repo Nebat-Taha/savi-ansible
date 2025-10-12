@@ -12,17 +12,7 @@
 # All rights reserved.
 # -----------------------------------------------------------------------------
 ---
-- name: Set up and Manage MongoDB SSH Tunnel
-  hosts: localhost
-  gather_facts: false 
-  # Use the first host in the dedicated 'mongodb_servers' group.
-  # If running in multi-region, this will be the host relevant to the current inventory scope.
-  vars:
-    mongodb_host_ip: "{{ groups['mongodb_servers'][0] }}" 
-    ssh_local_port: 27017
-    ssh_remote_port: 27017
-    
-  tasks:
+
     # -------------------------------------------------------------------------
     # TASK 1: ENSURE NO PREVIOUS TUNNEL IS RUNNING (Cleanup/Avoid Port Conflict)
     # -------------------------------------------------------------------------
