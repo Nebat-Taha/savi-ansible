@@ -59,7 +59,9 @@
     # Authorize and upload in a single shell block:
     # Uses secrets from the CI/CD environment.
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }} && \
-    /usr/bin/backblaze-b2 upload-file "nebatn" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
+    /usr/bin/backblaze-b2 upload-file nebatn "/tmp/mongodb_backup/{{ backup_filename.stdout | trim }}" "mongodb/{{ backup_filename.stdout | trim }}"
+ 
+ # /usr/bin/backblaze-b2 upload-file "nebatn" "{{ backup_file_info.stdout | trim }}" "{{ backup_file_info.stdout | basename | trim }}"
   # NOTE: 'nebatn' is a placeholder bucket name. Substitute it with your actual bucket name.
   become: true
 
