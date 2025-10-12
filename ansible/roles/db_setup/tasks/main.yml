@@ -4,7 +4,7 @@
 # The service cannot be started if the package is not installed.
 # =============================================================================
 
-# 1. Install Prerequisites
+# 1. Install Prerequisites (Already OK)
 - name: Install gnupg and necessary packages
   ansible.builtin.apt:
     name:
@@ -14,20 +14,24 @@
     update_cache: yes
   become: true
 
-# 2. Add MongoDB GPG Key (Uses the generic key which works for 7.0+)
-- name: Add MongoDB GPG key
-  ansible.builtin.apt_key:
-    url: https://www.mongodb.org/static/pgp/server-7.0.asc  # Updated GPG Key URL
-    state: present
+# 2. Download and Add the official MongoDB GPG Key (Using apt-key is deprecated)
+# This uses the modern way to add a key to /etc/apt/keyrings/
+- name: Add MongoDB GPG key (modern method)
+  ansible.builtin.shell: |
+    curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
+      sudo gpg --dearmor -o /etc/apt/keyrings/mongodb-server-7.0.gpg
+  args:
+    creates: /etc/apt/keyrings/mongodb-server-7.0.gpg
   become: true
+  changed_when: true
 
-# 3. Add MongoDB Repository (Targets 'noble' distribution for MongoDB 7.0)
+# 3. Add MongoDB Repository (Targets 'noble' 24.04 using the correct format)
 - name: Add MongoDB repository for Ubuntu 24.04
   ansible.builtin.apt_repository:
-    # Target 'noble' (24.04) and MongoDB 7.0
-    repo: 'deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse' 
+    # Use the 'noble' codename, specify the signed key, and use the correct URL structure.
+    repo: 'deb [ signed-by=/etc/apt/keyrings/mongodb-server-7.0.gpg, arch=amd64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse'
     state: present
-    update_cache: yes # Force update after adding new repo
+    filename: 'mongodb-org-7.0' # Use a specific filename for the source list
   become: true
 
 # 4. Install MongoDB
@@ -36,6 +40,8 @@
     name: mongodb-org
     state: present
   become: true
+
+# ... (Continue with your existing service and configuration tasks)
 
 
 - name: Check if MongoDB is running
