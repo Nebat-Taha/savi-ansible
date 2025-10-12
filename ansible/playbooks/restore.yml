@@ -6,9 +6,9 @@
   roles:
     - mongodb_restore
 
-- name: Restore Redis instances
-  hosts: redis_servers
-  become: yes
-  tags: redis_restore
-  roles:
-    - redis_restore
+#- name: Restore Redis instances
+#  hosts: redis_servers
+#  become: yes
+#  tags: redis_restore
+#  roles:
+#    - redis_restore

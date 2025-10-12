@@ -71,10 +71,10 @@
 # This command uses 'mongorestore' to restore the downloaded backup. 
 # The '--drop' flag ensures the existing database is completely replaced. 
 # The restore connects to the MongoDB service via the instance's public IP.
-
-- name: Restore MongoDB from the downloaded backup
-  ansible.builtin.shell: |
-    mongorestore --uri "mongodb://{{ ansible_host }}:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
+# Use 127.0.0.1 (localhost) for secure, on-instance connection.
+- name: Restore MongoDB from the downloaded backup (Secure Local Connection)
+  ansible.builtin.shell: | 
+    mongorestore --uri "mongodb://127.0.0.1:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
   become: true
 
 # This final step cleans up the local temporary directory and the downloaded 
