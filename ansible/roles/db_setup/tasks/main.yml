@@ -4,7 +4,7 @@
 # The service cannot be started if the package is not installed.
 # =============================================================================
 
-# 1. Install Prerequisites (Ensure necessary components are available)
+# 1. Install Prerequisites
 - name: Install gnupg and necessary packages
   ansible.builtin.apt:
     name:
@@ -14,26 +14,30 @@
     update_cache: yes
   become: true
 
-# 2. Add MongoDB GPG Key (Required for secure repository access)
+# 2. Add MongoDB GPG Key (Uses the generic key which works for 7.0+)
 - name: Add MongoDB GPG key
   ansible.builtin.apt_key:
-    url: https://www.mongodb.org/static/pgp/server-6.0.asc
+    url: https://www.mongodb.org/static/pgp/server-7.0.asc  # Updated GPG Key URL
     state: present
   become: true
 
-# 3. Add MongoDB Repository (Tells the package manager where to find the package)
-- name: Add MongoDB repository
+# 3. Add MongoDB Repository (Targets 'noble' distribution for MongoDB 7.0)
+- name: Add MongoDB repository for Ubuntu 24.04
   ansible.builtin.apt_repository:
-    repo: 'deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse'
+    # Target 'noble' (24.04) and MongoDB 7.0
+    repo: 'deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/7.0 multiverse' 
     state: present
+    update_cache: yes # Force update after adding new repo
   become: true
 
-# 4. Install MongoDB (The actual package installation)
+# 4. Install MongoDB
 - name: Ensure MongoDB is installed (mongodb-org)
   ansible.builtin.package:
     name: mongodb-org
     state: present
   become: true
+
+
 - name: Check if MongoDB is running
   ansible.builtin.service:
     name: mongod
