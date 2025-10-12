@@ -1,0 +1,55 @@
+# -----------------------------------------------------------------------------
+# ROLE: tunnel_management - Secure SSH Tunnel Management
+#
+# PURPOSE:  Establishes a local SSH port forward (tunnel) from the CI/CD runner 
+#           (localhost) to the remote MongoDB server. This securely redirects 
+#           traffic for port 27017.
+#
+# TARGETS:  Runs exclusively on the Ansible control node (localhost).
+#
+# License: MIT License 
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# -----------------------------------------------------------------------------
+---
+- name: Set up and Manage MongoDB SSH Tunnel
+  hosts: localhost
+  gather_facts: false 
+  # Use the first host in the dedicated 'mongodb_servers' group.
+  # If running in multi-region, this will be the host relevant to the current inventory scope.
+  vars:
+    mongodb_host_ip: "{{ groups['mongodb_servers'][0] }}" 
+    ssh_local_port: 27017
+    ssh_remote_port: 27017
+    
+  tasks:
+    # -------------------------------------------------------------------------
+    # TASK 1: ENSURE NO PREVIOUS TUNNEL IS RUNNING (Cleanup/Avoid Port Conflict)
+    # -------------------------------------------------------------------------
+    - name: Find and kill existing tunnel process (if any)
+      ansible.builtin.shell: "pkill -f 'ssh.*:{{ ssh_local_port }}:127.0.0.1:{{ ssh_remote_port }}' || true"
+      changed_when: false
+      failed_when: false
+
+    # -------------------------------------------------------------------------
+    # TASK 2: ESTABLISH THE SECURE TUNNEL
+    # Starts the SSH connection in the background for port forwarding.
+    # -------------------------------------------------------------------------
+    - name: Establish secure SSH Tunnel
+      ansible.builtin.command: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -f -N -L {{ ssh_local_port }}:127.0.0.1:{{ ssh_remote_port }} ubuntu@{{ mongodb_host_ip }}
+      changed_when: true
+      register: tunnel_start
+      
+    # -------------------------------------------------------------------------
+    # TASK 3: REGISTER TUNNEL PID FOR TEARDOWN (Critical for later cleanup)
+    # -------------------------------------------------------------------------
+    - name: Find and register tunnel PID
+      # We use 'pgrep' to find the PID of the background SSH process.
+      ansible.builtin.shell: pgrep -f "ssh -f -N -L {{ ssh_local_port }}:127.0.0.1:{{ ssh_remote_port }} ubuntu@{{ mongodb_host_ip }}"
+      register: tunnel_pid
+      changed_when: false
+      
+    - name: Set tunnel_pid as fact for handler use
+      ansible.builtin.set_fact:
+        mongodb_tunnel_pid: "{{ tunnel_pid.stdout | trim }}"

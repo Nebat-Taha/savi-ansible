@@ -1,0 +1,8 @@
+# -----------------------------------------------------------------------------
+# SUB-TASK: teardown_trigger.yml
+# PURPOSE:  A single task to explicitly notify the tunnel teardown handler.
+# -----------------------------------------------------------------------------
+- name: Notify handler to kill the background SSH tunnel
+  ansible.builtin.command: "echo 'Triggering tunnel teardown handler'"
+  changed_when: true
+  notify: "Kill MongoDB SSH Tunnel Process" # This name matches the handler name

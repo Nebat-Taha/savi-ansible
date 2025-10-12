@@ -1,0 +1,8 @@
+# ansible/roles/tunnel_management/handlers/main.yml
+# This file contains the logic to kill the SSH process using the PID registered in the tasks.
+---
+- name: Kill MongoDB SSH Tunnel Process
+  ansible.builtin.command: "kill -9 {{ hostvars['localhost']['mongodb_tunnel_pid'] }}"
+  # Check if the PID fact was set before trying to kill the process.
+  when: hostvars['localhost']['mongodb_tunnel_pid'] is defined and hostvars['localhost']['mongodb_tunnel_pid'] | length > 0
+  changed_when: true
