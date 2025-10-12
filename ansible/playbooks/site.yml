@@ -23,7 +23,7 @@
   hosts: mongodb_servers  # <-- New host group
   become: yes
   roles:
-    - mongodb_backup_ssh
+    - mongodb_backup_final
   tags:
     - mongodb_backup_final
 
