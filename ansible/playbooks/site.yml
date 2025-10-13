@@ -19,13 +19,13 @@
 #  roles:
 #    - tunnel_management # ESTABLISHES the tunnel and SETS the PID fact.
 
-#- name: Backup MongoDB instances
-#  hosts: mongodb_servers  # <-- New host group
-#  become: yes
-#  roles:
-#    - mongodb_backup_final
-#  tags:
-#    - mongodb_backup_final
+- name: Backup MongoDB instances
+  hosts: mongodb_servers  # <-- New host group
+  become: yes
+  roles:
+    - mongodb_backup_final
+  tags:
+    - mongodb_backup_final
 
 
 #- name: Tear down SSH Tunnel
