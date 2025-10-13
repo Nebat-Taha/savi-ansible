@@ -37,7 +37,7 @@
 # Find the most recent backup file in the Backblaze bucket.
 - name: Find the most recent RDB backup file in Backblaze
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn | grep 'redis-backup-' | tail -1 | awk '{print $NF}'
+    /usr/bin/backblaze-b2 ls nebatn redis/ | grep 'redis-backup-' | tail -1 | awk '{print $NF}'
   become: true
   register: latest_backup_file
   

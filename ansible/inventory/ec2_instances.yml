@@ -2,15 +2,15 @@
 all:
   children:
     
-    #redis_servers:
-    #  hosts:
-    #    54.226.188.99:
-    #      ansible_user: ubuntu
-
-    mongodb_servers:
+    redis_servers:
       hosts:
         54.146.255.218: 
           ansible_user: ubuntu
+
+    #mongodb_servers:
+    #  hosts:
+    #    54.146.255.218: 
+    #      ansible_user: ubuntu
 
     #ec2:
     #  hosts:

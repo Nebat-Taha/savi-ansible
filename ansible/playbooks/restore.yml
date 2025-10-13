@@ -1,4 +1,30 @@
+# -----------------------------------------------------------------------------
+# PLAYBOOK: restore.yml - Database Restoration Workflow
+#
+# PURPOSE: This playbook is designed exclusively for disaster recovery and testing.
+#          It executes the necessary roles to download the latest backup files 
+#          from the cloud and restore them to the designated database servers.
+#
+# EXECUTION CONTROL (CI/CD): 
+#   This playbook is intended to be executed via the dedicated "Ansible Database Restore"
+#   GitHub Actions workflow. The workflow dynamically passes the required tag 
+#   (`mongodb_restore` or `redis_restore`) and the target AWS region based on the 
+#   user's input choices, ensuring only the necessary restoration play runs.
+#
+# MANUAL EXECUTION:
+#   To run manually, you must use a tag (e.g., `--tags mongodb_restore`) to 
+#   select which database restoration play to execute.
+#
+# License: MIT License 
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# -----------------------------------------------------------------------------
 ---
+# -----------------------------------------------------------------------------
+# PLAY 1: MongoDB Restoration
+# Purpose: Executes tasks listed in the 'mongodb_restore' role to download the 
+#          latest backup archive from B2 and restore it to the local MongoDB instance.
+# -----------------------------------------------------------------------------
 - name: Restore MongoDB instances
   hosts: mongodb_servers
   become: yes
@@ -6,9 +32,15 @@
   roles:
     - mongodb_restore
 
-#- name: Restore Redis instances
-#  hosts: redis_servers
-#  become: yes
-#  tags: redis_restore
-#  roles:
-#    - redis_restore
+# -----------------------------------------------------------------------------
+# PLAY 2: Redis Restoration
+# Purpose: Executes tasks listed in the 'redis_restore' role to restore the 
+#          Redis database from the latest available backup.
+# -----------------------------------------------------------------------------
+
+- name: Restore Redis instances
+  hosts: redis_servers
+  become: yes
+  tags: redis_restore
+  roles:
+    - redis_restore

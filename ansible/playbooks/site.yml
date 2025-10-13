@@ -1,86 +1,96 @@
+# -----------------------------------------------------------------------------
+# PLAYBOOK: site.yml - Master Orchestration of Infrastructure Roles
+#
+# PURPOSE: This file orchestrates the entire deployment and management workflow.
+#          It contains a sequence of plays, and each play executes all tasks 
+#          listed in its corresponding role (located in the 'roles' folder) 
+#          against the specified host group. 
+# EXECUTION FLOW: 
+#   1. Plays are executed sequentially in the order they are defined in this file.
+#   2. For the current CI/CD environment configuration, this file is generally 
+#      executed in its entirety.
+#   3. TO RUN ONLY A SUBSET OF PLAYS: For immediate control, you must 
+#      comment out (using '#') the plays you do not wish to execute. 
+# NOTE: Future improvements may involve allowing dynamic tag selection from the 
+#       CI/CD pipeline for more granular control.
+# License: MIT License 
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# -----------------------------------------------------------------------------
 --- 
-- name: Set up MongoDB database with test data
-  hosts: mongodb_servers
-  become: yes
-  tags:
-    - mongodb_setup
-  roles:
-    - mongodb_setup
-
-
-#- name: Set up secure SSH Tunnel for MongoDB
-#  hosts: localhost
-#  gather_facts: false
-#  connection: local  
-#  vars:                    # <-- Defines variables for the role
-#    mongodb_host_ip: "{{ groups['mongodb_servers'][0] }}"
-#    ssh_local_port: 27017
-#    ssh_remote_port: 27017
+# -----------------------------------------------------------------------------
+# PLAY 1: MongoDB Setup
+# Purpose: Executes tasks listed in the 'mongodb_setup' role to install, secure, 
+#          and configure MongoDB on the server(s).
+# -----------------------------------------------------------------------------
+#- name: Set up MongoDB database with test data
+#  hosts: mongodb_servers
+#  become: yes
+#  tags:
+#    - mongodb_setup
 #  roles:
-#    - tunnel_management # ESTABLISHES the tunnel and SETS the PID fact.
+#    - mongodb_setup
 
-- name: Backup MongoDB instances
-  hosts: mongodb_servers  # <-- New host group
-  become: yes
-  roles:
-    - mongodb_backup_final
-  tags:
-    - mongodb_backup_final
-
-
-#- name: Tear down SSH Tunnel
-#  hosts: localhost
-#  gather_facts: false
-#  connection: local   
-#  tasks:
-    # -------------------------------------------------------------
-    # CRITICAL FIX: Add a task to run the handler explicitly.
-    # We will use the 'meta: flush_handlers' module.
-    # -------------------------------------------------------------
-#    - name: Force execution of tunnel teardown handler
-#      ansible.builtin.meta: flush_handlers
-
-  # -------------------------------------------------------------
-  # CRITICAL FIX: The handler definition MUST be here
-  # -------------------------------------------------------------
-#  handlers:
-#    - name: Kill MongoDB SSH Tunnel Process
-#      ansible.builtin.command: "kill -9 {{ hostvars['localhost']['mongodb_tunnel_pid'] }}"
-#      changed_when: true
-      # No need for delegate_to: localhost since the play's hosts is localhost
-      # and connection is local.
-#      when: hostvars['localhost']['mongodb_tunnel_pid'] is defined and hostvars['localhost']['mongodb_tunnel_pid'] | length > 0
-
-#- name: Set up Redis database
-#  hosts: redis_servers # <-- New host group
+# -----------------------------------------------------------------------------
+# PLAY 2: MongoDB Backup Execution
+# Purpose: Executes tasks listed in the 'mongodb_backup_final' role to create a 
+#          local archive of the database and upload it to the remote storage (B2).
+# -----------------------------------------------------------------------------
+#- name: Backup MongoDB instances
+#  hosts: mongodb_servers  
 #  become: yes
 #  roles:
-#    - redis_setup
+#    - mongodb_backup_final
 #  tags:
-#    - redis_setup
+#    - mongodb_backup_final
+
+# -----------------------------------------------------------------------------
+# PLAY 3: Redis Setup
+# Purpose: Executes tasks listed in the 'redis_setup' role to install and configure 
+#          the Redis service on its dedicated hosts.
+# -----------------------------------------------------------------------------
+- name: Set up Redis database
+  hosts: redis_servers 
+  become: yes
+  roles:
+    - redis_setup
+  tags:
+    - redis_setup
+
+# -----------------------------------------------------------------------------
+# PLAY 4: Redis Backup Execution
+# Purpose: Executes tasks listed in the 'redis_backup' role to back up Redis instances.
+# -----------------------------------------------------------------------------
+- name: Backup Redis instances
+  hosts: redis_servers    
+  become: yes
+  roles:
+    - redis_backup
+  tags:
+    - redis_backup 
 
 
-
-#- name: Backup Redis instances
-#  hosts: redis_servers    # <-- New host group
-#  become: yes
-#  roles:
-#    - redis_backup
-#  tags:
-#    - redis_backup # Optional tag, but good practice
-
-
-
+# -----------------------------------------------------------------------------
+# PLAY 5: EC2 Baseline Configuration
+# Purpose: Executes tasks listed in the 'ec2_user_mgmt' role to apply foundational 
+#          configurations, such as user management, on all general EC2 instances.
+# -----------------------------------------------------------------------------
 #- name: Apply EC2 instance configurations
-  #hosts: ec2
-  #become: yes
-  #roles:
-    #- ec2_user_mgmt
+#  hosts: ec2
+#  become: yes
+#  roles:
+#    - ec2_user_mgmt
 
+# -----------------------------------------------------------------------------
+# PLAY 6: AWS Policy Enforcement (Local Controller Execution)
+# Purpose: Executes tasks listed in the 's3_policy_enforcement' role to manage 
+#          AWS API actions (e.g., S3 policies). This play runs on the Ansible 
+#          Controller itself (localhost).
+# -----------------------------------------------------------------------------
 #- name: Enforce AWS API policies
-  #hosts: localhost
-  #connection: local
-  #gather_facts: yes
-  #roles:
-    #- s3_policy_enforcement
+#  hosts: localhost
+#  connection: local
+#  gather_facts: yes
+#  roles:
+#    - s3_policy_enforcement
 

@@ -47,6 +47,9 @@
     BACKUP_FILE="{{ rdb_file_info.files[0].path }}"
     TIMESTAMP="{{ ansible_date_time.iso8601_basic_short }}"
     FILENAME="redis-backup-${TIMESTAMP}.rdb"
+
+    B2_DESTINATION="redis/${FILENAME}" 
+
     
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }} && \
     /usr/bin/backblaze-b2 upload-file "nebatn" "${BACKUP_FILE}" "${FILENAME}"
