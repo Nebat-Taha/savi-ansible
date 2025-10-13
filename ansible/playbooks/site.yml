@@ -1,11 +1,11 @@
 --- 
-#- name: Set up MongoDB database with test data
-#  hosts: mongodb_servers
-#  become: yes
-#  tags:
-#    - db_setup
-#  roles:
-#    - db_setup
+- name: Set up MongoDB database with test data
+  hosts: mongodb_servers
+  become: yes
+  tags:
+    - mongodb_setup
+  roles:
+    - mongodb_setup
 
 
 #- name: Set up secure SSH Tunnel for MongoDB
@@ -19,13 +19,13 @@
 #  roles:
 #    - tunnel_management # ESTABLISHES the tunnel and SETS the PID fact.
 
-- name: Backup MongoDB instances
-  hosts: mongodb_servers  # <-- New host group
-  become: yes
-  roles:
-    - mongodb_backup_final
-  tags:
-    - mongodb_backup_final
+#- name: Backup MongoDB instances
+#  hosts: mongodb_servers  # <-- New host group
+#  become: yes
+#  roles:
+#    - mongodb_backup_final
+#  tags:
+#    - mongodb_backup_final
 
 
 #- name: Tear down SSH Tunnel

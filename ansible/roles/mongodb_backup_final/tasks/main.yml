@@ -39,11 +39,7 @@
     state: directory
     mode: '0755'
 
-# =================================================================================
-# ⚠️ CRITICAL CHANGE: Using 127.0.0.1 to connect through the SSH Tunnel
-# =================================================================================
-# Creates a MongoDB dump as a single archive file. The connection URI uses 127.0.0.1:27017,
-# which is securely forwarded by the SSH tunnel to the remote MongoDB instance.
+
 - name: Create MongoDB dump with a unique name 
   ansible.builtin.shell: |
     # The --uri uses localhost (127.0.0.1), which is routed by the tunnel.
