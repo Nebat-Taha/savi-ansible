@@ -1,9 +1,7 @@
 ---
 all:
   children:
-    
-    # 1. GLOBAL FUNCTIONAL GROUPS
-    # NOTE: The 'mongodb_servers' group is a peer to 'redis_servers'
+  # 1. GLOBAL FUNCTIONAL GROUPS
     mongodb_servers:
       children:
         - us_east_1_mongodb_servers
@@ -15,33 +13,40 @@ all:
         - eu_central_1_redis_servers
 
     # 2. GLOBAL REGIONAL GROUPS
-    # NOTE: These groups are also peers to the functional groups
     region_us_east_1:
       children:
         - us_east_1_mongodb_servers
         - us_east_1_redis_servers
-
+    
     region_eu_central_1:
       children:
+        - eu_central_1_mongodb_servers
         - eu_central_1_redis_servers
-        - eu_central_1_mongodb_servers 
+    
 
     # 3. CONCRETE HOST DEFINITIONS (The leaf nodes with IPs)
-    # NOTE: These groups are the *actual* hosts and must be peers 
-    #       to the Global Groups above, all under 'all: children:'
-
     us_east_1_mongodb_servers:
       hosts:
         54.90.196.42: 
           ansible_user: ubuntu
-
+    
     us_east_1_redis_servers:
       hosts: {} # Empty group defined here
 
-    eu_central_1_redis_servers: 
+    eu_central_1_redis_servers:
       hosts:
         3.79.25.182:
           ansible_user: ubuntu
-          
+    
     eu_central_1_mongodb_servers:
       hosts: {} # Empty group defined here
+
+
+    
+
+   
+      
+
+
+
+ 
