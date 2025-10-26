@@ -17,20 +17,22 @@
 # Copyright (c) 2025 Nebat Taha / Savi Finance
 # All rights reserved.
 # -----------------------------------------------------------------------------
---- 
+#--- 
 # -----------------------------------------------------------------------------
 # PLAY 1: MongoDB Setup
 # Purpose: Executes tasks listed in the 'mongodb_setup' role to install, secure, 
 #          and configure MongoDB on the server(s).
 # -----------------------------------------------------------------------------
-#- name: Set up MongoDB database with test data
+- name: Set up MongoDB database with test data
+  hosts: "{{ target_region }}_mongodb_servers"
 #  hosts: mongodb_servers
-#  become: yes
-#  tags:
-#    - mongodb_setup
-#  roles:
-#    - mongodb_setup
-
+   
+  become: yes
+  tags:
+    - mongodb_setup
+  roles:
+    - mongodb_setup
+  when: ansible_play_hosts_all | length > 0
 # -----------------------------------------------------------------------------
 # PLAY 2: MongoDB Backup Execution
 # Purpose: Executes tasks listed in the 'mongodb_backup_final' role to create a 
@@ -50,24 +52,24 @@
 #          the Redis service on its dedicated hosts.
 # -----------------------------------------------------------------------------
 - name: Set up Redis database
-  hosts: redis_servers 
+  hosts: "{{ target_region }}_redis_servers"
   become: yes
   roles:
     - redis_setup
   tags:
     - redis_setup
-
+  when: ansible_play_hosts_all | length > 0
 # -----------------------------------------------------------------------------
 # PLAY 4: Redis Backup Execution
 # Purpose: Executes tasks listed in the 'redis_backup' role to back up Redis instances.
 # -----------------------------------------------------------------------------
-- name: Backup Redis instances
-  hosts: redis_servers    
-  become: yes
-  roles:
-    - redis_backup
-  tags:
-    - redis_backup 
+#- name: Backup Redis instances
+#  hosts: redis_servers    
+#  become: yes
+#  roles:
+#    - redis_backup
+#  tags:
+#    - redis_backup 
 
 
 # -----------------------------------------------------------------------------

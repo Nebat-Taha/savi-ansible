@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        aws_region: ["us-east-1"]
+        aws_region: ["us-east-1", "eu-central-1"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,8 +41,17 @@ jobs:
       - run: ansible-galaxy collection install community.aws
       - run: pip install boto3 botocore
       
+      - name: Calculate Target Host Group Name
+        id: set_group
+        run: |
+          # Replace hyphen with underscore and prepend 'region_'
+          GROUP_NAME="region_${{ matrix.aws_region }}"
+          CLEAN_GROUP_NAME="${GROUP_NAME//-/_}"
+          
+          # Set the cleaned variable as a step output for use later
+          echo "CLEAN_GROUP_NAME=$CLEAN_GROUP_NAME" >> $GITHUB_OUTPUT
       - name: Run Master Playbook
-        run: ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml
+        run: ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}'
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg
           AWS_REGION: ${{ matrix.aws_region }}
