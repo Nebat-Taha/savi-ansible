@@ -43,13 +43,21 @@ jobs:
       
       - name: Calculate Target Host Group Name
         id: set_group
-        run: |
-          # Replace hyphen with underscore and prepend 'region_'
-          GROUP_NAME="region_${{ matrix.aws_region }}"
-          CLEAN_GROUP_NAME="${GROUP_NAME//-/_}"
+        run: | # Use the pipe '|' to treat this as a single script block
+          # 1. Get the raw region variable from the matrix
+          RAW_REGION="${{ matrix.aws_region }}"
           
-          # Set the cleaned variable as a step output for use later
+          # 2. Use standard Bash substitution to replace all '-' with '_'
+          # We perform the substitution on a separate line for clarity and robustness
+          CLEAN_REGION="${RAW_REGION//-/_}"
+
+          # 3. Calculate the --limit group name
+          CLEAN_GROUP_NAME="region_${CLEAN_REGION}"
+          
+          # Set the cleaned variables as step outputs
           echo "CLEAN_GROUP_NAME=$CLEAN_GROUP_NAME" >> $GITHUB_OUTPUT
+          echo "CLEAN_REGION=$CLEAN_REGION" >> $GITHUB_OUTPUT
+      
       - name: Run Master Playbook
         run: ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}'
         env:
