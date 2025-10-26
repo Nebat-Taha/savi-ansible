@@ -57,10 +57,14 @@ jobs:
           # Set the cleaned variables as step outputs
           echo "CLEAN_GROUP_NAME=$CLEAN_GROUP_NAME" >> $GITHUB_OUTPUT
           echo "CLEAN_REGION=$CLEAN_REGION" >> $GITHUB_OUTPUT
-      
-      - name: Run Master Playbook
-        run: ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}' \
+
+      - name: Run Master Playbook for Region ${{ matrix.aws_region }}
+        run: |
+          ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml \
+            --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}' \
             -e "target_region=${{ steps.set_group.outputs.CLEAN_REGION }}"
+      
+     
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg
           AWS_REGION: ${{ matrix.aws_region }}
