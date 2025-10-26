@@ -25,8 +25,6 @@
 # -----------------------------------------------------------------------------
 - name: Set up MongoDB database with test data
   hosts: "{{ target_region }}_mongodb_servers"
-#  hosts: mongodb_servers
-   
   become: yes
   tags:
     - mongodb_setup
