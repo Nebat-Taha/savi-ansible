@@ -1,26 +1,3 @@
-#---
-#all:
-  #children:
-    
-    #redis_servers:
-    #  hosts:
-    #    54.226.188.99:
-    #      ansible_user: ubuntu
-
-    #mongodb_servers:
-    #  hosts:
-    #    54.146.255.218: 
-    #      ansible_user: ubuntu
-
-    #ec2:
-    #  hosts:
-    #    54.167.17.162:
-    #      ansible_user: ubuntu 
-    #    18.193.125.21:
-    #      ansible_user: ubuntu
-
-
-# begining of dynamic inventroy
 # -----------------------------------------------------------------------------
 # INVENTORY: ec2_instances.yml - Target Servers
 #
@@ -31,51 +8,46 @@
 ---
 all:
   children:
+    
     # 1. GLOBAL FUNCTIONAL GROUPS (Used by plays: hosts: mongodb_servers)
-    # These groups contain ALL servers of that type across ALL regions.
+    # Note: eu_central_1_mongodb_servers is defined here for completeness 
+    # but is deliberately left empty below (sparse deployment).
     mongodb_servers:
       children:
         - us_east_1_mongodb_servers
-        - eu_central_1_mongodb_servers # Note: Must exist, even if empty, for safety
-       # - ap_southeast_2_mongodb_servers # Add others as needed
+        - eu_central_1_mongodb_servers 
     
     redis_servers:
       children:
         - us_east_1_redis_servers
         - eu_central_1_redis_servers
 
-    # 2. GLOBAL REGIONAL GROUPS (Used for general regional targeting, e.g., for EC2 roles)
+    # 2. GLOBAL REGIONAL GROUPS (Used for CI/CD --limit flag: hosts: region_us_east_1)
     region_us_east_1:
       children:
         - us_east_1_mongodb_servers
         - us_east_1_redis_servers
-        # Add other US-EAST-1 generic groups here
 
     region_eu_central_1:
       children:
         - eu_central_1_redis_servers
-        - eu_central_1_mongodb_servers
-        # Add other EU-CENTRAL-1 generic groups here
+        - eu_central_1_mongodb_servers # Include here for region completeness
 
 
-  # 3. CONCRETE HOST DEFINITIONS (The leaf nodes with IPs)
-  hosts:
-    # Generic hosts can be defined here if they don't fit a functional group
-    
-    children: # Nested groups defined outside the 'all: children' block for clarity
-    
+    # 3. CONCRETE HOST DEFINITIONS (The leaf nodes with IPs)
+    # NOTE: These groups must be defined as children of 'all' for linking.
+
     # ----------------------------------------------------------------------
     # A. US-EAST-1 Concrete Groups
     # ----------------------------------------------------------------------
-    #us_east_1_redis_servers:
-    #  hosts:
-    #    54.146.255.218: 
-    #      ansible_user: ubuntu
-
     us_east_1_mongodb_servers:
       hosts:
         54.90.196.42: 
           ansible_user: ubuntu
+
+    # Redis is NOT in US-EAST-1 for this test, so this group is EMPTY
+    us_east_1_redis_servers:
+      hosts: {} # Empty group defined here
 
     # ----------------------------------------------------------------------
     # B. EU-CENTRAL-1 Concrete Groups
@@ -85,26 +57,6 @@ all:
         3.79.25.182:
           ansible_user: ubuntu
           
-    # NOTE: Assuming no MongoDB server in EU-CENTRAL-1 for the sake of example.
-    # If it existed, it would be 'eu_central_1_mongodb_servers:'
-
-    # ----------------------------------------------------------------------
-    # C. US-WEST-1 Concrete Groups
-    # ----------------------------------------------------------------------
-    # CORRECTING DUPLICATE IP: 54.146.255.218 was in US-EAST-1 as redis. 
-    # Use a unique IP for the US-WEST-1 MongoDB host.
-    #us_west_1_mongodb_servers:
-    #  hosts:
-    #    52.8.200.100: # Placeholder for actual unique US-WEST-1 IP
-    #      ansible_user: ubuntu
-    
-    # ----------------------------------------------------------------------
-    # D. AP-SOUTHEAST-2 Concrete Groups (EC2/Generic)
-    # ----------------------------------------------------------------------
-    # General EC2 servers can be split into regional generic groups if needed
-    #ap_southeast_2_ec2_generic:
-    #  hosts:
-    #    13.239.237.176: # Placeholder for unique AP IP 1
-    #      ansible_user: ubuntu 
-    #    #18.193.125.22: # Placeholder for unique AP IP 2
-        #  ansible_user: ubuntu    
+    # MongoDB is NOT in EU-CENTRAL-1 for this test, so this group is EMPTY
+    eu_central_1_mongodb_servers:
+      hosts: {} # Empty group defined here
