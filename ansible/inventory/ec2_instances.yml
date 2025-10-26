@@ -1,17 +1,9 @@
-# -----------------------------------------------------------------------------
-# INVENTORY: ec2_instances.yml - Target Servers
-#
-# PURPOSE: Organizes hosts by region and function to support sparse multi-region 
-#          CI/CD execution via dynamic host targeting (e.g., 'us_east_1_mongodb_servers').
-# -----------------------------------------------------------------------------
-
 ---
 all:
   children:
     
-    # 1. GLOBAL FUNCTIONAL GROUPS (Used by plays: hosts: mongodb_servers)
-    # Note: eu_central_1_mongodb_servers is defined here for completeness 
-    # but is deliberately left empty below (sparse deployment).
+    # 1. GLOBAL FUNCTIONAL GROUPS
+    # NOTE: The 'mongodb_servers' group is a peer to 'redis_servers'
     mongodb_servers:
       children:
         - us_east_1_mongodb_servers
@@ -22,7 +14,8 @@ all:
         - us_east_1_redis_servers
         - eu_central_1_redis_servers
 
-    # 2. GLOBAL REGIONAL GROUPS (Used for CI/CD --limit flag: hosts: region_us_east_1)
+    # 2. GLOBAL REGIONAL GROUPS
+    # NOTE: These groups are also peers to the functional groups
     region_us_east_1:
       children:
         - us_east_1_mongodb_servers
@@ -31,32 +24,24 @@ all:
     region_eu_central_1:
       children:
         - eu_central_1_redis_servers
-        - eu_central_1_mongodb_servers # Include here for region completeness
-
+        - eu_central_1_mongodb_servers 
 
     # 3. CONCRETE HOST DEFINITIONS (The leaf nodes with IPs)
-    # NOTE: These groups must be defined as children of 'all' for linking.
+    # NOTE: These groups are the *actual* hosts and must be peers 
+    #       to the Global Groups above, all under 'all: children:'
 
-    # ----------------------------------------------------------------------
-    # A. US-EAST-1 Concrete Groups
-    # ----------------------------------------------------------------------
     us_east_1_mongodb_servers:
       hosts:
         54.90.196.42: 
           ansible_user: ubuntu
 
-    # Redis is NOT in US-EAST-1 for this test, so this group is EMPTY
     us_east_1_redis_servers:
       hosts: {} # Empty group defined here
 
-    # ----------------------------------------------------------------------
-    # B. EU-CENTRAL-1 Concrete Groups
-    # ----------------------------------------------------------------------
     eu_central_1_redis_servers: 
       hosts:
         3.79.25.182:
           ansible_user: ubuntu
           
-    # MongoDB is NOT in EU-CENTRAL-1 for this test, so this group is EMPTY
     eu_central_1_mongodb_servers:
       hosts: {} # Empty group defined here
