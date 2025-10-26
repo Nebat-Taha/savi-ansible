@@ -36,8 +36,8 @@ all:
     mongodb_servers:
       children:
         - us_east_1_mongodb_servers
-        - us_west_1_mongodb_servers # Note: Must exist, even if empty, for safety
-        - ap_southeast_2_mongodb_servers # Add others as needed
+        - eu_central_1_mongodb_servers # Note: Must exist, even if empty, for safety
+       # - ap_southeast_2_mongodb_servers # Add others as needed
     
     redis_servers:
       children:
@@ -54,12 +54,8 @@ all:
     region_eu_central_1:
       children:
         - eu_central_1_redis_servers
+        - eu_central_1_mongodb_servers
         # Add other EU-CENTRAL-1 generic groups here
-        
-    region_us_west_1:
-      children:
-        - us_west_1_mongodb_servers
-        # Add other US-WEST-1 generic groups here
 
 
   # 3. CONCRETE HOST DEFINITIONS (The leaf nodes with IPs)
@@ -106,9 +102,9 @@ all:
     # D. AP-SOUTHEAST-2 Concrete Groups (EC2/Generic)
     # ----------------------------------------------------------------------
     # General EC2 servers can be split into regional generic groups if needed
-    ap_southeast_2_ec2_generic:
-      hosts:
-        13.239.237.176: # Placeholder for unique AP IP 1
-          ansible_user: ubuntu 
-        #18.193.125.22: # Placeholder for unique AP IP 2
+    #ap_southeast_2_ec2_generic:
+    #  hosts:
+    #    13.239.237.176: # Placeholder for unique AP IP 1
+    #      ansible_user: ubuntu 
+    #    #18.193.125.22: # Placeholder for unique AP IP 2
         #  ansible_user: ubuntu    
