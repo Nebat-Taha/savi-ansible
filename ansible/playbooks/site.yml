@@ -21,23 +21,23 @@
 # New steps for the inventory
 # ansible/playbooks/site.yml
 
-- name: Configure MongoDB in selected region
-  hosts: "{{ target_region }}_mongodb_servers" 
-  
-  tasks:
+#- name: Configure MongoDB in selected region
+#  hosts: "{{ target_region }}_mongodb_servers" 
+#  
+#  tasks:
     # 1. ASSERTION TASK (The fix for sparse deployment)
-    - name: Ensure target hosts exist before proceeding
-      ansible.builtin.assert:
-        that: "ansible_play_batch | length > 0"
-        fail_msg: "SKIPPING: No MongoDB hosts found for region {{ target_region }}"
+#    - name: Ensure target hosts exist before proceeding
+#      ansible.builtin.assert:
+#        that: "ansible_play_batch | length > 0"
+#        fail_msg: "SKIPPING: No MongoDB hosts found for region {{ target_region }}"
       # This task runs once on the controller (localhost) before connecting to remote hosts.
-      run_once: true
-      delegate_to: localhost
+#      run_once: true
+#      delegate_to: localhost
 
     # 2. ROLE EXECUTION
-    - name: Apply MongoDB setup role
-      ansible.builtin.import_role:
-        name: mongodb_setup
+#    - name: Apply MongoDB setup role
+#      ansible.builtin.import_role:
+#        name: mongodb_setup
 
 # ... other plays (e.g., redis setup) would follow the same pattern ...
 # -----------------------------------------------------------------------------
@@ -45,13 +45,13 @@
 # Purpose: Executes tasks listed in the 'mongodb_setup' role to install, secure, 
 #          and configure MongoDB on the server(s).
 # -----------------------------------------------------------------------------
-#- name: Set up MongoDB database with test data
-#  hosts: "{{ target_region }}_mongodb_servers"
-#  become: yes
-#  tags:
-#    - mongodb_setup
-#  roles:
-#    - mongodb_setup
+- name: Set up MongoDB database with test data
+  hosts: "{{ target_region }}_mongodb_servers"
+  become: yes
+  tags:
+    - mongodb_setup
+  roles:
+    - mongodb_setup
  
 # -----------------------------------------------------------------------------
 # PLAY 2: MongoDB Backup Execution
