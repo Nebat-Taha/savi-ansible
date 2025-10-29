@@ -18,28 +18,7 @@
 # All rights reserved.
 # -----------------------------------------------------------------------------
 --- 
-# New steps for the inventory
-# ansible/playbooks/site.yml
 
-#- name: Configure MongoDB in selected region
-#  hosts: "{{ target_region }}_mongodb_servers" 
-#  
-#  tasks:
-    # 1. ASSERTION TASK (The fix for sparse deployment)
-#    - name: Ensure target hosts exist before proceeding
-#      ansible.builtin.assert:
-#        that: "ansible_play_batch | length > 0"
-#        fail_msg: "SKIPPING: No MongoDB hosts found for region {{ target_region }}"
-      # This task runs once on the controller (localhost) before connecting to remote hosts.
-#      run_once: true
-#      delegate_to: localhost
-
-    # 2. ROLE EXECUTION
-#    - name: Apply MongoDB setup role
-#      ansible.builtin.import_role:
-#        name: mongodb_setup
-
-# ... other plays (e.g., redis setup) would follow the same pattern ...
 # -----------------------------------------------------------------------------
 # PLAY 1: MongoDB Setup
 # Purpose: Executes tasks listed in the 'mongodb_setup' role to install, secure, 
@@ -59,7 +38,7 @@
 #          local archive of the database and upload it to the remote storage (B2).
 # -----------------------------------------------------------------------------
 #- name: Backup MongoDB instances
-#  hosts: mongodb_servers  
+#  hosts: "{{ target_region }}_mongodb_servers"  
 #  become: yes
 #  roles:
 #    - mongodb_backup_final
@@ -84,7 +63,7 @@
 # Purpose: Executes tasks listed in the 'redis_backup' role to back up Redis instances.
 # -----------------------------------------------------------------------------
 #- name: Backup Redis instances
-#  hosts: redis_servers    
+#  hosts: "{{ target_region }}_redis_servers"   
 #  become: yes
 #  roles:
 #    - redis_backup

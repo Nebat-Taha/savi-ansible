@@ -63,7 +63,14 @@ jobs:
           ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml \
             --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}' \
             -e "target_region=${{ steps.set_group.outputs.CLEAN_REGION }}"
-      
+      # --limit: CRITICALLY limits the total hosts Ansible can see to 
+            # ONLY those belonging to the current job's region (e.g., region_us_east_1).
+            # This ensures regional isolation and prevents cross-region configuration.
+       # -e (Extra Vars): Passes the clean region name (e.g., us_east_1) 
+            # to the playbook. This is used by the 'hosts:' parameter 
+            # (e.g., hosts: "{{ target_region }}_mongodb_servers") for dynamic targeting 
+            # and graceful skipping of services that don't exist in this region.
+              
      
         env:
           ANSIBLE_CONFIG: ansible/ansible.cfg
