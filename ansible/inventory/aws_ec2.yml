@@ -3,7 +3,7 @@
 # Location: ansible/inventory/aws_ec2.yml
 
 # Specifies the dynamic inventory plugin to use
-plugin: community.aws.aws_ec2
+plugin: aws_ec2
 
 # Strict control over which instances are included (good for safety)
 strict: true
