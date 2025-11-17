@@ -25,10 +25,13 @@
 #          and configure MongoDB on the server(s).
 # -----------------------------------------------------------------------------
 - name: Set up MongoDB database with test data
-  # hosts: "{{ target_region }}_mongodb_servers"
-  # hosts: "tag_Service_mongodb & region_{{ target_region }}"
-  # hosts: "(tag_Service_mongodb & region_{{ target_region | default('UNDEFINED') }})"
-  hosts: "(tag_Service_mongodb & region_{{ target_region | replace('-', '_') | default('UNDEFINED') }})"
+  hosts: "{{ mongodb_target_group }}"
+  
+  # 2. Define the complex host pattern here in 'vars' to avoid the Ansible parser bug
+  vars:
+    # This ensures the final host string is a clean, single value for the host parser.
+    # It combines the service tag, the AND operator (&), and the region variable.
+    mongodb_target_group: "tag_Service_mongodb & region_{{ target_region | replace('-', '_') | default('UNDEFINED_REGION') }}"
   become: yes
   tags:
     - mongodb_setup
@@ -54,10 +57,10 @@
 #          the Redis service on its dedicated hosts.
 # -----------------------------------------------------------------------------
 - name: Set up Redis database
-  #hosts: "{{ target_region }}_redis_servers"
-  # hosts: "tag_Service_redis & region_{{ target_region }}"
-  hosts: "(tag_Service_redis & region_{{ target_region | replace('-', '_') | default('UNDEFINED') }})"
- 
+  hosts: "{{ redis_target_group }}"
+  
+  vars:
+    redis_target_group: "tag_Service_redis & region_{{ target_region | replace('-', '_') | default('UNDEFINED_REGION') }}"
   become: yes
   roles:
     - redis_setup
