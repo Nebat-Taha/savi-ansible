@@ -79,9 +79,9 @@
 # -----------------------------------------------------------------------------
 - name: Apply EC2 instance configurations
 #  # FIX: Change 'ec2' to '@aws_ec2'. 
-  # '@aws_ec2' is the group name automatically created by the dynamic 
+  # '@all' is the group name automatically created by the dynamic 
   # inventory plugin that contains ALL discovered EC2 instances.
-  hosts: "@aws_ec2"
+  hosts: "@all"
   become: yes
   roles:
     - ec2_user_mgmt
