@@ -55,7 +55,9 @@
 # -----------------------------------------------------------------------------
 - name: Set up Redis database
   #hosts: "{{ target_region }}_redis_servers"
-  hosts: "tag_Service_redis & region_{{ target_region }}"
+  # hosts: "tag_Service_redis & region_{{ target_region }}"
+  hosts: "(tag_Service_redis & region_{{ target_region | replace('-', '_') | default('UNDEFINED') }})"
+ 
   become: yes
   roles:
     - redis_setup
