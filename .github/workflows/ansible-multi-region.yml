@@ -37,10 +37,28 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+          cache: "pip"
       - run: pip install ansible
       - run: ansible-galaxy collection install community.aws
       - run: pip install boto3 botocore
 
+      - name: Report Python & Ansible Environment Details
+        run: |
+          echo "--- Python Interpreter Path ---"
+          which python
+          echo "--- Python Version ---"
+          python --version
+          echo "--- Installed Python Packages (Ansible/Boto3/Botocore versions) ---"
+          pip list | grep -E 'ansible|boto3|botocore'
+          echo "--- ANSIBLE_PYTHON_INTERPRETER Setting ---"
+          # This variable might be set if you use an isolated venv; check its value.
+          echo "Value: $ANSIBLE_PYTHON_INTERPRETER"
+
+      # 4. Optional: Verify Inventory Loading (requires AWS credentials to be configured in the runner)
+      # This step will confirm which hosts and regions are being queried.
+      - name: Preview Dynamic Inventory
+        # Replace the path with your actual inventory file location
+        run: ansible-inventory -i ansible/inventory/aws_ec2.yml --graph
       - name: Calculate Target Host Group Name
         id: set_group
         run: | # Use the pipe '|' to treat this as a single script block
