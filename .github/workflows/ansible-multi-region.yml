@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-          # cache: "pip"
+          #cache: "pip"
       - run: pip install ansible
       - run: ansible-galaxy collection install community.aws
       - run: pip install boto3 botocore
@@ -78,7 +78,7 @@ jobs:
 
       - name: Run Master Playbook for Region ${{ matrix.aws_region }}
         run: |
-          ansible-playbook -i ansible/inventory/ ansible/playbooks/site.yml \
+          ansible-playbook -i ansible/inventory/aws_ec2.yml,ansible/inventory/aws_api_hosts.yml ansible/playbooks/site.yml \
             --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}' \
             -e "target_region=${{ steps.set_group.outputs.CLEAN_REGION }}"
         # --limit: CRITICALLY limits the total hosts Ansible can see to
