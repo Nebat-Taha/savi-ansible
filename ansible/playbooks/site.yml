@@ -77,11 +77,14 @@
 # Purpose: Executes tasks listed in the 'ec2_user_mgmt' role to apply foundational 
 #          configurations, such as user management, on all general EC2 instances.
 # -----------------------------------------------------------------------------
-#- name: Apply EC2 instance configurations
-#  hosts: ec2
-#  become: yes
-#  roles:
-#    - ec2_user_mgmt
+- name: Apply EC2 instance configurations
+#  # FIX: Change 'ec2' to '@aws_ec2'. 
+  # '@aws_ec2' is the group name automatically created by the dynamic 
+  # inventory plugin that contains ALL discovered EC2 instances.
+  hosts: "@aws_ec2"
+  become: yes
+  roles:
+    - ec2_user_mgmt
 
 # -----------------------------------------------------------------------------
 # PLAY 6: AWS Policy Enforcement (Local Controller Execution)
