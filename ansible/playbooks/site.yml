@@ -81,7 +81,7 @@
 #  # FIX: Change 'ec2' to '@aws_ec2'. 
   # '@all' is the group name automatically created by the dynamic 
   # inventory plugin that contains ALL discovered EC2 instances.
-  hosts: all
+  hosts: all:!localhost
   become: yes
   roles:
     - ec2_user_mgmt
