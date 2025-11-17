@@ -79,7 +79,6 @@ jobs:
       - name: Run Master Playbook for Region ${{ matrix.aws_region }}
         run: |
           ansible-playbook -i ansible/inventory/aws_ec2.yml ansible/playbooks/site.yml \
-            --limit '${{ steps.set_group.outputs.CLEAN_GROUP_NAME }}' \
             -e "target_region=${{ steps.set_group.outputs.CLEAN_REGION }}"
         # --limit: CRITICALLY limits the total hosts Ansible can see to
         # ONLY those belonging to the current job's region (e.g., region_us_east_1).
