@@ -25,18 +25,18 @@
 # Purpose: Executes tasks listed in the 'mongodb_restore' role to download the 
 #          latest backup archive from B2 and restore it to the local MongoDB instance.
 # -----------------------------------------------------------------------------
-- name: Restore MongoDB instances
+- name: Conditionally Restore MongoDB instances
   hosts: restore_target_group
   become: yes
-  # CRITICAL FIX: The 'when' condition must apply to a block, not the play definition.
-  # This block will only execute if 'db_to_restore' equals 'mongodb'.
-  block:
-    - name: Run MongoDB Restoration Role
+  
+  # FIX: Replaced 'roles' or 'block' with 'tasks' to allow conditional logic.
+  tasks:
+    - name: Run MongoDB Restoration Role (Conditional)
       ansible.builtin.include_role:
         name: mongodb_restore
       tags: mongodb_restore
-      
-  when: db_to_restore is defined and db_to_restore == 'mongodb'
+      # The 'when' clause is now correctly applied to the task (include_role).
+      when: db_to_restore is defined and db_to_restore == 'mongodb'
 # -----------------------------------------------------------------------------
 # PLAY 2: Redis Restoration
 # Purpose: Executes tasks listed in the 'redis_restore' role to restore the 
