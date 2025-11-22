@@ -20,34 +20,33 @@
 # All rights reserved.
 # -----------------------------------------------------------------------------
 ---
-# -----------------------------------------------------------------------------
-# PLAY 1: MongoDB Restoration
-# Purpose: Executes tasks listed in the 'mongodb_restore' role to download the 
-#          latest backup archive from B2 and restore it to the local MongoDB instance.
+# This playbook targets the single, explicitly defined host from the 
+# runtime-generated 'restore_targets.yml' file.
+
+# PLAY 1: MongoDB Restoration (Verified Correct)
 # -----------------------------------------------------------------------------
 - name: Conditionally Restore MongoDB instances
   hosts: restore_target_group
   become: yes
   
-  # FIX: Replaced 'roles' or 'block' with 'tasks' to allow conditional logic.
   tasks:
     - name: Run MongoDB Restoration Role (Conditional)
       ansible.builtin.include_role:
         name: mongodb_restore
       tags: mongodb_restore
-      # The 'when' clause is now correctly applied to the task (include_role).
       when: db_to_restore is defined and db_to_restore == 'mongodb'
-# -----------------------------------------------------------------------------
-# PLAY 2: Redis Restoration
-# Purpose: Executes tasks listed in the 'redis_restore' role to restore the 
-#          Redis database from the latest available backup.
-# -----------------------------------------------------------------------------
 
-- name: Restore Redis instances
+# PLAY 2: Redis Restoration (The Fix for the current error)
+# -----------------------------------------------------------------------------
+- name: Conditionally Restore Redis instances
   hosts: restore_target_group
   become: yes
-  tags: redis_restore
-  roles:
-    - redis_restore
-  # Uses the variable 'db_to_restore' passed from the inventory file
-  when: db_to_restore is defined and db_to_restore == 'redis'
+  
+  # The 'tasks' keyword is necessary to allow conditional logic below.
+  tasks:
+    - name: Run Redis Restoration Role (Conditional)
+      ansible.builtin.include_role:
+        name: redis_restore
+      tags: redis_restore
+      # The 'when' clause is now correctly applied to the task, not the play.
+      when: db_to_restore is defined and db_to_restore == 'redis'
