@@ -1,8 +1,8 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# FINAL FIX: Explicitly lists the files in the 'mongodb/' folder to prevent 
-# B2 CLI errors and simplifies the jq filter.
+# FINAL FIX: The multi-line shell command syntax is corrected by removing 
+# comments and ensuring proper piping, resolving the YAML parsing error.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -35,8 +35,6 @@
 # Separate Task 2: Find the most recent backup file in the Backblaze bucket
 - name: "Find the most recent backup file in the 'mongodb/' folder"
   ansible.builtin.shell: |
-    # FIX APPLIED: Explicitly list files in the 'mongodb/' subfolder. 
-    # This is more stable and the resulting file names don't need a filter.
     /usr/bin/backblaze-b2 ls --long --json nebatn mongodb/ | \
     jq -r '.files[] | .fileName' | \
     sort -r | head -n 1
