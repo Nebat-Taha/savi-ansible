@@ -1,17 +1,14 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# PURPOSE: Locates the most recent MongoDB archive in the Backblaze B2 bucket, 
-#          downloads it, stops the database, restores it, and restarts the service.
-#
-# DIAGNOSTIC NOTE: This version includes a 'DIAGNOSTIC: Show the captured filename output' 
-#                  task to debug why the filename variable is empty.
+# CRITICAL FIX: All task names are now quoted to prevent YAML parsing errors.
+# DIAGNOSTIC NOTE: Includes a 'DIAGNOSTIC' task to capture and print the B2 output.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
 # -----------------------------------------------------------------------------
 
-- name: Ensure mongorestore, b2, and jq are installed
+- name: "Ensure mongorestore, b2, and jq are installed"
   ansible.builtin.package:
     name:
       - mongodb-database-tools
@@ -20,7 +17,7 @@
     state: present
   become: true
 
-- name: Create local restore directory
+- name: "Create local restore directory"
   ansible.builtin.file:
     path: /tmp/mongodb_restore
     state: directory
@@ -30,16 +27,15 @@
 # 2. DOWNLOAD LATEST BACKUP
 # -----------------------------------------------------------------------------
 
-- name: Authorize Backblaze B2 CLI
+- name: "Authorize Backblaze B2 CLI"
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
   become: true
   
 # Separate Task 2: Find the most recent backup file in the Backblaze bucket
-- name: Find the most recent backup file in the Backblaze bucket
+- name: "Find the most recent backup file in the Backblaze bucket"
   ansible.builtin.shell: |
     # The jq filter is set to look for the 'mongodb/' prefix in the full filename path.
-    # This command attempts to capture the name of the latest file.
     /usr/bin/backblaze-b2 ls --long --json nebatn | \
     jq -r '.files[] | select(.fileName | startswith("mongodb/")) | .fileName' | \
     sort -r | head -n 1
@@ -47,19 +43,19 @@
   register: latest_backup_file
 
 # NEW DIAGNOSTIC STEP: Check the raw output
-- name: DIAGNOSTIC: Show the captured filename output
+- name: "DIAGNOSTIC: Show the captured filename output"
   ansible.builtin.debug:
     var: latest_backup_file.stdout
 
-# CRITICAL VALIDATION STEP: This will fail because the output is empty.
-- name: Assert that a backup file was found
+# CRITICAL VALIDATION STEP: This will fail if the file name is empty.
+- name: "Assert that a backup file was found"
   ansible.builtin.assert:
     that: 
       - latest_backup_file.stdout | trim | length > 0
     fail_msg: "FATAL: No MongoDB backup file found in the 'mongodb/' bucket folder. Cannot proceed with restore. Check file naming or B2 connectivity."
 
-# Separate Task 3: Download the file (This task will NOT run because the Assert fails)
-- name: Download the latest backup from Backblaze B2 by name
+# Separate Task 3: Download the file
+- name: "Download the latest backup from Backblaze B2 by name"
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
@@ -67,20 +63,20 @@
 # 3. RESTORATION
 # -----------------------------------------------------------------------------
 
-- name: Stop MongoDB service for restoration
+- name: "Stop MongoDB service for restoration"
   ansible.builtin.service:
     name: mongod
     state: stopped
   become: true
 
-- name: Restore MongoDB from the downloaded backup (Secure Local Connection)
+- name: "Restore MongoDB from the downloaded backup (Secure Local Connection)"
   ansible.builtin.shell: | 
     mongorestore --uri "mongodb://127.0.0.1:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
   become: true
   register: restore_result
   failed_when: restore_result.rc != 0
 
-- name: Start MongoDB service after restoration
+- name: "Start MongoDB service after restoration"
   ansible.builtin.service:
     name: mongod
     state: started
@@ -89,7 +85,7 @@
 # 4. CLEANUP
 # -----------------------------------------------------------------------------
 
-- name: Clean up local restore directory
+- name: "Clean up local restore directory"
   ansible.builtin.file:
     path: /tmp/mongodb_restore
     state: absent
