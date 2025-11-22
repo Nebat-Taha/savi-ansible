@@ -4,8 +4,8 @@
 # PURPOSE: Locates the most recent MongoDB archive in the Backblaze B2 bucket, 
 #          downloads it, stops the database, restores it, and restarts the service.
 #
-# CRITICAL FIX: Added 'Assert' task to validate filename, preventing download-file-by-name 
-#               from failing with a "File names must contain at least one character" error.
+# CRITICAL FIX: The jq filter is relaxed to find filenames starting with 'mongodb-' 
+#               instead of 'mongodb/', resolving the issue where the path logic was too strict.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -43,19 +43,18 @@
   ansible.builtin.shell: |
     # Use jq to robustly find the filename of the latest file based on the timestamped name
     /usr/bin/backblaze-b2 ls --long --json nebatn | \
-    jq -r '.files[] | select(.fileName | startswith("mongodb/")) | .fileName' | \
+    # FIX APPLIED HERE: Now correctly matches files starting with 'mongodb-'
+    jq -r '.files[] | select(.fileName | startswith("mongodb-")) | .fileName' | \
     sort -r | head -n 1
   become: true
   register: latest_backup_file
 
-# NEW TASK: CRITICAL VALIDATION STEP
-# This will fail the playbook gracefully if no filename was found (to prevent the 400 bad_request error)
+# CRITICAL VALIDATION STEP: Ensure a filename was found before attempting download
 - name: Assert that a backup file was found
   ansible.builtin.assert:
     that: 
-      # Check if the captured standard output string, after trimming whitespace, has a length greater than zero.
       - latest_backup_file.stdout | trim | length > 0
-    fail_msg: "FATAL: No MongoDB backup file found in the 'mongodb/' bucket folder. Cannot proceed with restore."
+    fail_msg: "FATAL: No MongoDB backup file found in the 'mongodb/' bucket folder. Cannot proceed with restore. Check file naming or B2 connectivity."
 
 # Separate Task 3: Download the file
 - name: Download the latest backup from Backblaze B2 by name
