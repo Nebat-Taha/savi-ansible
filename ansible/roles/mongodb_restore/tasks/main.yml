@@ -16,6 +16,7 @@
   ansible.builtin.package:
     name:
       - mongodb-database-tools
+      - jq
     state: present
   become: true
 
@@ -38,65 +39,59 @@
     mode: '0755'
   become: true
 
-
-# This task authenticates the Backblaze B2 CLI using secrets from the CI/CD environment.
-# This is a prerequisite for any file operations with the bucket.
-- name: Authorize Backblaze B2 CLI
+- name: Find and download the latest backup file from Backblaze B2
   ansible.builtin.shell: |
+    # 1. Authorize B2 using CI/CD secrets
     /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    
+    # 2. Find the latest backup file by sorting the filename (which contains the timestamp)
+    LATEST_FILENAME=$(/usr/bin/backblaze-b2 ls --long --json nebatn | \
+                      jq -r '.files[] | select(.fileName | startswith("mongodb/")) | .fileName' | \
+                      sort -r | head -n 1)
+                      
+    if [ -z "$LATEST_FILENAME" ]; then
+        echo "Error: Could not find any backup files in the 'mongodb/' folder." >&2
+        exit 1
+    fi
+
+    # 3. Download the latest file to the temporary directory
+    DOWNLOAD_PATH="/tmp/mongodb_restore/$(basename "$LATEST_FILENAME")"
+    /usr/bin/backblaze-b2 download-file-by-name nebatn "$LATEST_FILENAME" "$DOWNLOAD_PATH"
+    
+    # 4. Echo the full local path for the next task
+    echo "$DOWNLOAD_PATH"
+    
+  args:
+    executable: /bin/bash
+  register: downloaded_file_path
   become: true
 
-# This task collects a list of all files in the specified Backblaze B2 bucket 
-# and registers the output to the 'b2_ls_output' variable, which is then used 
-# to identify the most recent backup.
-- name: List files in the Backblaze bucket 
-  # 'nebatn' is a placeholder for the bucket name. 'mongodb/' is the folder 
-  # inside that bucket which holds the MongoDB backups.
-  ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn mongodb/
-  become: true
-  register: b2_ls_output
+# 3. RESTORATION (The CRITICAL step)
+# -----------------------------------------------------------------------------
 
-# This task prints the list of available backups to the console. 
-#- name: Print bucket list for debugging
-#  ansible.builtin.debug:
-#    var: b2_ls_output.stdout_lines
-
-
-# This task retrieves the filename of the most recently created backup file 
-# from the list of files in the bucket by sorting them by time (implicitly by 'tail -1' 
-# since B2's 'ls' typically lists by upload time or name).
-- name: Find the most recent backup file in the Backblaze bucket
-  ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn mongodb/ | tail -1 | awk '{print $NF}'
-  become: true
-  register: latest_backup_file
-
-
-# This task prints the specific full B2 file path that will be downloaded.
-- name: ECHO the full B2 path being downloaded
-  ansible.builtin.debug:
-    msg: "B2 Download Path: {{ latest_backup_file.stdout | trim }}"
-
-
-# This task downloads the latest backup file from the Backblaze B2 bucket and 
-# saves it to a local temporary file on the server.
-
-- name: Download the latest backup from Backblaze B2 by name
-  ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
+# CRITICAL SAFETY STEP: Stop MongoDB service to ensure clean file restoration.
+- name: Stop MongoDB service for restoration
+  ansible.builtin.service:
+    name: mongod
+    state: stopped
   become: true
 
 # This command uses 'mongorestore' to restore the downloaded backup. 
-# The '--drop' flag ensures the existing database is completely replaced. 
-# Use 127.0.0.1 (localhost) for secure, on-instance connection.
 - name: Restore MongoDB from the downloaded backup (Secure Local Connection)
   ansible.builtin.shell: | 
-    mongorestore --uri "mongodb://127.0.0.1:27017" --drop --archive=/tmp/mongodb_restore/backup.gz
+    ARCHIVE_PATH="{{ downloaded_file_path.stdout | trim }}"
+    mongorestore --uri "mongodb://127.0.0.1:27017" --drop --archive="$ARCHIVE_PATH"
   become: true
   register: restore_result
   # Fail the playbook if the restore command returns a non-zero code
   failed_when: restore_result.rc != 0
+
+# CRITICAL SAFETY STEP: Start MongoDB service after restoration.
+- name: Start MongoDB service after restoration
+  ansible.builtin.service:
+    name: mongod
+    state: started
+  become: true
 
 # This final step cleans up the local temporary directory and the downloaded 
 # backup file to save disk space.
