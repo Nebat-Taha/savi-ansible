@@ -22,6 +22,11 @@ on:
                 required: true
                 type: string
 
+            backup_filename:
+                description: "Full path to the backup file in the B2 bucket (e.g., mongodb/2025-11-22-0300_backup.gz)"
+                required: true
+                type: string
+
 jobs:
     restore-database:
         runs-on: ubuntu-latest
@@ -64,9 +69,15 @@ jobs:
                   # YAML parsing errors related to multi-line content or indentation.
                   printf "# Runtime generated inventory for single-host restore operation.\nrestore_target_group:\n  hosts:\n    %s:\n      ansible_user: ubuntu\n  vars:\n    db_to_restore: %s\n" "$HOST" "$DB_TYPE" > "$INVENTORY_PATH"
 
-            - name: Run Restore Playbook for Selected Database
+            - name: Run Restore Playbook for Selected Database (Dynamic Region and Filename)
               run: |
-                  ansible-playbook -i ansible/inventory/restore_targets.yml ansible/playbooks/restore.yml --tags ${{ inputs.database }}_restore  -e "target_region=${{ inputs.aws_region }}"
+                  # This line passes the dynamic aws_region and the user-provided backup_filename
+                  ansible-playbook \
+                    -i ansible/inventory/restore_targets.yml \
+                    ansible/playbooks/restore.yml \
+                    --tags ${{ inputs.database }}_restore \
+                    -e "target_region=${{ inputs.aws_region }} backup_filename=${{ inputs.backup_filename }}"
+
               env:
                   ANSIBLE_CONFIG: ansible/ansible.cfg
                   AWS_REGION: ${{ matrix.aws_region }}
