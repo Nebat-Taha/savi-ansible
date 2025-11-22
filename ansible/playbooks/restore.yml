@@ -28,10 +28,14 @@
 - name: Restore MongoDB instances
   hosts: restore_target_group
   become: yes
-  tags: mongodb_restore
-  roles:
-    - mongodb_restore
-  # Uses the variable 'db_to_restore' passed from the inventory file
+  # CRITICAL FIX: The 'when' condition must apply to a block, not the play definition.
+  # This block will only execute if 'db_to_restore' equals 'mongodb'.
+  block:
+    - name: Run MongoDB Restoration Role
+      ansible.builtin.include_role:
+        name: mongodb_restore
+      tags: mongodb_restore
+      
   when: db_to_restore is defined and db_to_restore == 'mongodb'
 # -----------------------------------------------------------------------------
 # PLAY 2: Redis Restoration
