@@ -66,9 +66,7 @@ jobs:
 
             - name: Run Restore Playbook for Selected Database
               run: |
-                  ansible-playbook -i ansible/inventory/restore_targets.yml ansible/playbooks/restore.yml \
-                  --tags ${{ inputs.database }}_restore \
-                  -e "target_region=${{ inputs.aws_region }}"
+                  ansible-playbook -i ansible/inventory/restore_targets.yml ansible/playbooks/restore.yml --tags ${{ inputs.database }}_restore  -e "target_region=${{ inputs.aws_region }}"
               env:
                   ANSIBLE_CONFIG: ansible/ansible.cfg
                   AWS_REGION: ${{ matrix.aws_region }}
