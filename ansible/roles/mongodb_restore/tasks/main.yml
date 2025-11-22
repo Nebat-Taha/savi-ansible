@@ -1,8 +1,10 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# FINAL FIX: The multi-line shell command syntax is corrected by removing 
-# comments and ensuring proper piping, resolving the YAML parsing error.
+# FINAL FIX: The B2 authorization step is removed. Instead, the B2_APPLICATION_KEY_ID 
+# and B2_APPLICATION_KEY environment variables are explicitly set and exported 
+# within the shell environment of the file-finding task, guaranteeing authentication 
+# for the 'b2 ls' command. This resolves the empty output issue due to lost session state.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -27,15 +29,18 @@
 # 2. DOWNLOAD LATEST BACKUP
 # -----------------------------------------------------------------------------
 
-- name: "Authorize Backblaze B2 CLI"
+# NOTE: The separate 'Authorize Backblaze B2 CLI' task is removed, as its state 
+# was not persisting across tasks. Credentials are now passed directly below.
+
+- name: "Find and register the most recent backup file in the 'mongodb/' folder"
   ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-  become: true
-  
-# Separate Task 2: Find the most recent backup file in the Backblaze bucket
-- name: "Find the most recent backup file in the 'mongodb/' folder"
-  ansible.builtin.shell: |
+    # 1. Export credentials to make them available to the B2 CLI in this shell session
+    export B2_APPLICATION_KEY_ID={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}
+    export B2_APPLICATION_KEY={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    
+    # 2. Use the authorized B2 CLI to list files in the 'mongodb/' subfolder
     /usr/bin/backblaze-b2 ls --long --json nebatn mongodb/ | \
+    # 3. Extract the file name of the latest entry
     jq -r '.files[] | .fileName' | \
     sort -r | head -n 1
   become: true
@@ -51,6 +56,10 @@
 # Separate Task 3: Download the file
 - name: "Download the latest backup from Backblaze B2 by name"
   ansible.builtin.shell: |
+    # Ensure credentials are exported again for the download command
+    export B2_APPLICATION_KEY_ID={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}
+    export B2_APPLICATION_KEY={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+    
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
 
