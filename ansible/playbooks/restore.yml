@@ -26,12 +26,13 @@
 #          latest backup archive from B2 and restore it to the local MongoDB instance.
 # -----------------------------------------------------------------------------
 - name: Restore MongoDB instances
-  hosts: mongodb_servers
+  hosts: restore_target_group
   become: yes
   tags: mongodb_restore
   roles:
     - mongodb_restore
-
+  # Uses the variable 'db_to_restore' passed from the inventory file
+  when: db_to_restore is defined and db_to_restore == 'mongodb'
 # -----------------------------------------------------------------------------
 # PLAY 2: Redis Restoration
 # Purpose: Executes tasks listed in the 'redis_restore' role to restore the 
@@ -39,8 +40,10 @@
 # -----------------------------------------------------------------------------
 
 - name: Restore Redis instances
-  hosts: redis_servers
+  hosts: restore_target_group
   become: yes
   tags: redis_restore
   roles:
     - redis_restore
+  # Uses the variable 'db_to_restore' passed from the inventory file
+  when: db_to_restore is defined and db_to_restore == 'redis'
