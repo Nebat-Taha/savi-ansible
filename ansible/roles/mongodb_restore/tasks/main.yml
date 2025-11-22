@@ -1,8 +1,9 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# CRITICAL FIX: All task names are now quoted to prevent YAML parsing errors.
-# DIAGNOSTIC NOTE: Includes a 'DIAGNOSTIC' task to capture and print the B2 output.
+# CRITICAL DIAGNOSTIC VERSION: This version temporarily disables the file-finding 
+# filter and the assertion to capture the RAW JSON output from B2. 
+# We need this output to fix the broken file name matching logic.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -24,7 +25,7 @@
     mode: '0755'
   become: true
 
-# 2. DOWNLOAD LATEST BACKUP
+# 2. DOWNLOAD LATEST BACKUP (DIAGNOSTIC SECTION)
 # -----------------------------------------------------------------------------
 
 - name: "Authorize Backblaze B2 CLI"
@@ -33,34 +34,35 @@
   become: true
   
 # Separate Task 2: Find the most recent backup file in the Backblaze bucket
-- name: "Find the most recent backup file in the Backblaze bucket"
+- name: "DIAGNOSTIC: Get RAW B2 JSON file list (NO FILTER)"
   ansible.builtin.shell: |
-    # The jq filter is set to look for the 'mongodb/' prefix in the full filename path.
-    /usr/bin/backblaze-b2 ls --long --json nebatn | \
-    jq -r '.files[] | select(.fileName | startswith("mongodb/")) | .fileName' | \
-    sort -r | head -n 1
+    # CAPTURE RAW JSON: This command lists all files in the bucket 'nebatn' and stores the unfiltered JSON in latest_backup_file.stdout
+    /usr/bin/backblaze-b2 ls --long --json nebatn
   become: true
   register: latest_backup_file
 
-# NEW DIAGNOSTIC STEP: Check the raw output
-- name: "DIAGNOSTIC: Show the captured filename output"
+# NEW DIAGNOSTIC STEP: Check the raw output (will be the full JSON list)
+- name: "DIAGNOSTIC: Show the UNFILTERED B2 JSON output"
   ansible.builtin.debug:
     var: latest_backup_file.stdout
+    verbosity: 1
 
-# CRITICAL VALIDATION STEP: This will fail if the file name is empty.
-- name: "Assert that a backup file was found"
+# CRITICAL VALIDATION STEP: Temporarily skip the assertion so the playbook finishes and we get the diagnostic output.
+- name: "Temporarily SKIPPING ASSERTION to capture B2 output"
   ansible.builtin.assert:
     that: 
-      - latest_backup_file.stdout | trim | length > 0
-    fail_msg: "FATAL: No MongoDB backup file found in the 'mongodb/' bucket folder. Cannot proceed with restore. Check file naming or B2 connectivity."
+      - true # Always passes
+    msg: "Skipping assertion to capture B2 diagnostic output."
 
-# Separate Task 3: Download the file
-- name: "Download the latest backup from Backblaze B2 by name"
+# Placeholder download task (will run, but the output will be the raw JSON list, which we expect to fail the next step)
+- name: "Download the latest backup from Backblaze B2 by name (Will fail, but we need the output)"
   ansible.builtin.shell: |
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
+  # We expect this to fail with a non-zero return code (rc=1) or an error because the filename is actually a large JSON string now.
+  failed_when: false # Ignore failure so the log doesn't stop here, but the JSON output is the critical part.
 
-# 3. RESTORATION
+# 3. RESTORATION (Temporarily skip these tasks to speed up the diagnostic run)
 # -----------------------------------------------------------------------------
 
 - name: "Stop MongoDB service for restoration"
@@ -68,6 +70,7 @@
     name: mongod
     state: stopped
   become: true
+  when: false
 
 - name: "Restore MongoDB from the downloaded backup (Secure Local Connection)"
   ansible.builtin.shell: | 
@@ -75,12 +78,14 @@
   become: true
   register: restore_result
   failed_when: restore_result.rc != 0
+  when: false
 
 - name: "Start MongoDB service after restoration"
   ansible.builtin.service:
     name: mongod
     state: started
   become: true
+  when: false
 
 # 4. CLEANUP
 # -----------------------------------------------------------------------------
@@ -90,3 +95,4 @@
     path: /tmp/mongodb_restore
     state: absent
   become: true
+  when: false
