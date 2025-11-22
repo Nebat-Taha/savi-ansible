@@ -18,7 +18,7 @@ on:
                     - us-east-1
                     - eu-central-1
             target_host:
-                description: "IP or FQDN of the SINGLE host to restore (e.g., ec2-x-x-x.compute.amazonaws.com)"
+                description: "IP of the SINGLE host to restore"
                 required: true
                 type: string
 

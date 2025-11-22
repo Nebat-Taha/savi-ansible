@@ -104,7 +104,12 @@
 
 # This final step cleans up the local temporary directory and the downloaded 
 # backup file to save disk space.
-
+- name: Start MongoDB service after restoration
+  ansible.builtin.service:
+    name: mongod
+    state: started
+  become: true
+  
 - name: Clean up local restore directory
   ansible.builtin.file:
     path: /tmp/mongodb_restore
