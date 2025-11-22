@@ -65,7 +65,7 @@ jobs:
                   printf "# Runtime generated inventory for single-host restore operation.\nrestore_target_group:\n  hosts:\n    %s:\n      ansible_user: ubuntu\n  vars:\n    db_to_restore: %s\n" "$HOST" "$DB_TYPE" > "$INVENTORY_PATH"
 
             - name: Run Restore Playbook for Selected Database
-              run:
+              run: |
                   ansible-playbook -i ansible/inventory/restore_targets.yml ansible/playbooks/restore.yml \
                   --tags ${{ inputs.database }}_restore \
                   -e "target_region=${{ inputs.aws_region }}"
