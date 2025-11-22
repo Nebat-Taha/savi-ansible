@@ -31,7 +31,7 @@
   
   tasks:
     - name: Run MongoDB Restoration Role (Conditional)
-      ansible.builtin.include_role:
+      ansible.builtin.import_role:
         name: mongodb_restore
       tags: mongodb_restore
       when: db_to_restore is defined and db_to_restore == 'mongodb'
@@ -45,7 +45,7 @@
   # The 'tasks' keyword is necessary to allow conditional logic below.
   tasks:
     - name: Run Redis Restoration Role (Conditional)
-      ansible.builtin.include_role:
+      ansible.builtin.import_role:
         name: redis_restore
       tags: redis_restore
       # The 'when' clause is now correctly applied to the task, not the play.
