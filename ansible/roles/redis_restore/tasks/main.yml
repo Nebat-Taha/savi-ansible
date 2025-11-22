@@ -1,4 +1,13 @@
+# -----------------------------------------------------------------------------
+# ROLE: redis_restore - Redis Restore Automation
+#
+# NEW APPROACH: Relies on the user-provided 'backup_filename' variable passed 
+# from the CI/CD workflow to ensure a specific, reliable restore point.
+# -----------------------------------------------------------------------------
 ---
+# 1. DEPENDENCY SETUP
+# -----------------------------------------------------------------------------
+
 # Ensure all necessary tools (Backblaze B2 CLI) are installed on the host.
 - name: Ensure backblaze-b2 is installed for download
   ansible.builtin.package:
@@ -18,7 +27,15 @@
   ansible.builtin.set_fact:
     redis_data_dir: "{{ redis_dir_output.stdout_lines[1] | trim }}"
 
-# ----------------- Critical Restore Block -----------------
+# 2. DOWNLOAD SPECIFIC BACKUP FILE (Using user-provided variable: backup_filename)
+# -----------------------------------------------------------------------------
+
+- name: "Assert that the backup_filename variable was provided"
+  ansible.builtin.assert:
+    that: 
+      - backup_filename is defined
+      - backup_filename | trim | length > 0
+    fail_msg: "FATAL: The 'backup_filename' variable must be provided via the CI/CD workflow."
 
 # CRITICAL STEP: Stop the Redis service immediately to prevent all client writes 
 # and ensure a consistent restore (guarantees RPO=0).
@@ -28,25 +45,16 @@
     state: stopped
   become: true
 
-# Authorize the Backblaze B2 CLI for download operations.
-- name: Authorize Backblaze B2 CLI
-  ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-  become: true
-
-# Find the most recent backup file in the Backblaze bucket.
-- name: Find the most recent RDB backup file in Backblaze
-  ansible.builtin.shell: |
-    /usr/bin/backblaze-b2 ls nebatn redis/ | grep 'redis-backup-' | tail -1 | awk '{print $NF}'
-  become: true
-  register: latest_backup_file
-  
-# Download the latest backup directly to the final 'dump.rdb' path, overwriting the old file.
+# Download the specific backup directly to the final 'dump.rdb' path.
 # This ensures the new file is in place while the service is down.
-- name: Download the latest RDB backup
+- name: Download the specific RDB backup file from Backblaze B2
   ansible.builtin.shell: |
-    LATEST_FILE="{{ latest_backup_file.stdout | trim }}"
-    /usr/bin/backblaze-b2 download-file-by-name nebatn "${LATEST_FILE}" "{{ redis_data_dir }}/dump.rdb"
+    # Credentials must be exported in the shell for the B2 CLI to work persistently.
+    export B2_APPLICATION_KEY_ID={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}
+    export B2_APPLICATION_KEY={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+
+    # Use the user-provided variable for the file name
+    /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ backup_filename | trim }}" "{{ redis_data_dir }}/dump.rdb"
   become: true
 
 # Restart the Redis service. Redis will automatically detect and load the new 'dump.rdb' file.
