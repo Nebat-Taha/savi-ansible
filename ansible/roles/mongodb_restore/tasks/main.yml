@@ -1,9 +1,9 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# FINAL VERSION: This file expects the 'backup_filename' to be passed via the 
-# CI/CD workflow's -e flag. All brittle file-finding and diagnostic logic 
-# has been removed for maximum reliability and user control over the restore point.
+# FIX: The service is stopped, then immediately restarted and paused for 5s 
+# to ensure the MongoDB server is up and listening on 27017 before mongorestore 
+# tries to connect, resolving the 'connection refused' error.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -25,7 +25,7 @@
     mode: '0755'
   become: true
 
-# 2. DOWNLOAD SPECIFIC BACKUP FILE (Using user-provided variable: backup_filename)
+# 2. DOWNLOAD SPECIFIC BACKUP FILE (User Input)
 # -----------------------------------------------------------------------------
 
 - name: "Assert that the backup_filename variable was provided"
@@ -33,7 +33,6 @@
     that: 
       - backup_filename is defined
       - backup_filename | trim | length > 0
-    # This fail message corresponds to the CI/CD input being required and missing
     fail_msg: "FATAL: The 'backup_filename' variable must be provided via the CI/CD workflow."
 
 - name: "Download the specific backup file from Backblaze B2"
@@ -49,11 +48,21 @@
 # 3. RESTORATION
 # -----------------------------------------------------------------------------
 
-- name: "Stop MongoDB service for restoration"
+- name: "Stop MongoDB service for restoration (ensures clean start)"
   ansible.builtin.service:
     name: mongod
     state: stopped
   become: true
+
+- name: "Start MongoDB service to accept mongorestore connection"
+  ansible.builtin.service:
+    name: mongod
+    state: started
+  become: true
+
+- name: "Wait 5 seconds for MongoDB server to fully initialize and listen"
+  ansible.builtin.pause:
+    seconds: 5
 
 - name: "Restore MongoDB from the downloaded backup (Secure Local Connection)"
   ansible.builtin.shell: | 
@@ -62,7 +71,7 @@
   register: restore_result
   failed_when: restore_result.rc != 0
 
-- name: "Start MongoDB service after restoration"
+- name: "Ensure MongoDB service is running after restoration"
   ansible.builtin.service:
     name: mongod
     state: started
