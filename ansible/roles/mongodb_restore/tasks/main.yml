@@ -87,6 +87,13 @@
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
 
+#New
+# CRITICAL SAFETY STEP: Stop MongoDB service to ensure clean file restoration.
+- name: Stop MongoDB service for restoration
+  ansible.builtin.service:
+    name: mongod
+    state: stopped
+  become: true
 # This command uses 'mongorestore' to restore the downloaded backup. 
 # The '--drop' flag ensures the existing database is completely replaced. 
 # Use 127.0.0.1 (localhost) for secure, on-instance connection.
