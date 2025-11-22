@@ -1,14 +1,10 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# FINAL FIX: The B2 authorization step is removed. Instead, the B2_APPLICATION_KEY_ID 
-# and B2_APPLICATION_KEY environment variables are explicitly set and exported 
-# within the shell environment of the file-finding task, guaranteeing authentication 
-# for the 'b2 ls' command. This resolves the empty output issue due to lost session state.
+# DIAGNOSTIC V3: Checking the raw Return Code (rc) of the B2 listing command 
+# to determine if the command itself is failing or if the output is truly empty.
 # -----------------------------------------------------------------------------
 ---
-
-
 # 1. DEPENDENCY SETUP
 # -----------------------------------------------------------------------------
 
@@ -28,42 +24,55 @@
     mode: '0755'
   become: true
 
-# 2. DOWNLOAD LATEST BACKUP
+# 2. DOWNLOAD LATEST BACKUP (DIAGNOSTIC SECTION)
 # -----------------------------------------------------------------------------
 
-# NOTE: The separate 'Authorize Backblaze B2 CLI' task is removed, as its state 
-# was not persisting across tasks. Credentials are now passed directly below.
+# We return to the separate authorization task for a cleaner separation of concerns.
+- name: "Authorize Backblaze B2 CLI for session"
+  ansible.builtin.shell: |
+    /usr/bin/backblaze-b2 authorize-account {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }} {{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
+  become: true
+  
+- name: "DIAGNOSTIC: Get RAW B2 JSON file list and RC"
+  ansible.builtin.shell: |
+    # Running the simplest possible B2 list command to check if it returns 
+    # a non-zero exit code, which indicates failure (e.g., Auth failure, no bucket).
+    /usr/bin/backblaze-b2 ls --long --json nebatn mongodb/
+  become: true
+  register: raw_b2_output
+
+- name: "DIAGNOSTIC: Show RAW B2 Output and Return Code (rc)"
+  ansible.builtin.debug:
+    msg: "B2 Return Code (RC): {{ raw_b2_output.rc }}\nB2 Standard Output: {{ raw_b2_output.stdout }}"
+
+# --- FIX LOGIC: We will re-run the file finding logic here based on the RC check. ---
 
 - name: "Find and register the most recent backup file in the 'mongodb/' folder"
   ansible.builtin.shell: |
-    # 1. Export credentials to make them available to the B2 CLI in this shell session
-    export B2_APPLICATION_KEY_ID={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}
-    export B2_APPLICATION_KEY={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-    
-    # 2. Use the authorized B2 CLI to list files in the 'mongodb/' subfolder
     /usr/bin/backblaze-b2 ls --long --json nebatn mongodb/ | \
-    # 3. Extract the file name of the latest entry
     jq -r '.files[] | .fileName' | \
     sort -r | head -n 1
   become: true
   register: latest_backup_file
+  # Only execute this command if the diagnostic run passed (rc=0)
+  when: raw_b2_output.rc == 0
 
 # CRITICAL VALIDATION STEP: Ensure a filename was found
 - name: "Assert that a backup file was found"
   ansible.builtin.assert:
     that: 
-      - latest_backup_file.stdout | trim | length > 0
-    fail_msg: "FATAL: No MongoDB backup file found in the 'mongodb/' bucket folder. Cannot proceed with restore. Check file naming or B2 connectivity."
-
+      # Use default('') to safely handle an empty variable if the shell task was skipped
+      - latest_backup_file.stdout | default('') | trim | length > 0
+      # Also assert the initial list command was successful
+      - raw_b2_output.rc == 0
+    fail_msg: "FATAL: B2 Listing failed (RC={{ raw_b2_output.rc }}) or no file found. Cannot proceed with restore."
+  
 # Separate Task 3: Download the file
 - name: "Download the latest backup from Backblaze B2 by name"
   ansible.builtin.shell: |
-    # Ensure credentials are exported again for the download command
-    export B2_APPLICATION_KEY_ID={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY_ID') }}
-    export B2_APPLICATION_KEY={{ lookup('env', 'BACKBLAZE_APPLICATION_KEY') }}
-    
     /usr/bin/backblaze-b2 download-file-by-name nebatn "{{ latest_backup_file.stdout | trim }}" /tmp/mongodb_restore/backup.gz
   become: true
+  when: latest_backup_file.stdout | default('') | trim | length > 0
 
 # 3. RESTORATION
 # -----------------------------------------------------------------------------
@@ -73,6 +82,7 @@
     name: mongod
     state: stopped
   become: true
+  when: latest_backup_file.stdout | default('') | trim | length > 0
 
 - name: "Restore MongoDB from the downloaded backup (Secure Local Connection)"
   ansible.builtin.shell: | 
@@ -80,12 +90,14 @@
   become: true
   register: restore_result
   failed_when: restore_result.rc != 0
+  when: latest_backup_file.stdout | default('') | trim | length > 0
 
 - name: "Start MongoDB service after restoration"
   ansible.builtin.service:
     name: mongod
     state: started
   become: true
+  when: latest_backup_file.stdout | default('') | trim | length > 0
 
 # 4. CLEANUP
 # -----------------------------------------------------------------------------
@@ -95,4 +107,4 @@
     path: /tmp/mongodb_restore
     state: absent
   become: true
-
+  when: latest_backup_file.stdout | default('') | trim | length > 0
