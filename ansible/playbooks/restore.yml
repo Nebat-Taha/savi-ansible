@@ -29,7 +29,7 @@
 # This playbook targets the single, explicitly defined host from the 
 # runtime-generated 'restore_targets.yml' file.
 
-# PLAY 1: MongoDB Restoration (Verified Correct)
+# PLAY 1: MongoDB Restoration 
 # -----------------------------------------------------------------------------
 - name: Conditionally Restore MongoDB instances
   hosts: restore_target_group
@@ -42,7 +42,7 @@
       tags: mongodb_restore
       when: db_to_restore is defined and db_to_restore == 'mongodb'
 
-# PLAY 2: Redis Restoration (The Fix for the current error)
+# PLAY 2: Redis Restoration 
 # -----------------------------------------------------------------------------
 - name: Conditionally Restore Redis instances
   hosts: restore_target_group
