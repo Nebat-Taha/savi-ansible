@@ -1,9 +1,14 @@
 # -----------------------------------------------------------------------------
 # ROLE: mongodb_restore - MongoDB Restore Automation
 #
-# FIX: The service is stopped, then immediately restarted and paused for 5s 
-# to ensure the MongoDB server is up and listening on 27017 before mongorestore 
-# tries to connect, resolving the 'connection refused' error.
+#
+# APPROACH: Relies on the user-provided 'backup_filename' variable passed 
+#           from the CI/CD workflow to ensure a specific, reliable restore point.
+#
+# License: MIT License 
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# 
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP

@@ -1,3 +1,32 @@
+# -----------------------------------------------------------------------------
+# WORKFLOW: Ansible Database Restore (ansibledb_restore.yml)
+#
+# PURPOSE:  Provides a safe, manual mechanism for operators to restore a database
+#           from a specific cloud backup (Backblaze B2) in a disaster recovery
+#           or testing scenario.
+#
+# OPERATIONAL SAFETY NOTE: This workflow assumes application traffic has been
+# BLOCKED at the infrastructure level before execution to prevent corrupted
+# writes to the newly restored database.
+#
+# TRIGGER:  Manually via workflow_dispatch (GitHub Actions UI).
+#
+# INPUTS:
+#   - 'database': Selects the Ansible role tag (mongodb or redis).
+#   - 'aws_region': The target AWS region where the host resides.
+#   - 'target_host': The IP address of the SINGLE host to restore.
+#   - 'backup_filename': The exact file path in B2 (ensures RPO control).
+#
+# ARCHITECTURE:
+#   - Uses user inputs to construct an EPHEMERAL, RUNTIME-GENERATED INVENTORY
+#     file for a single execution.
+#   - Executes the corresponding Ansible restore role, passing the critical
+#     'backup_filename' variable.
+#
+# License: MIT License
+# Copyright (c) 2025 Nebat Taha / Savi Finance
+# All rights reserved.
+# -----------------------------------------------------------------------------
 name: Ansible Database Restore
 
 on:
@@ -23,7 +52,7 @@ on:
                 type: string
 
             backup_filename:
-                description: "Full path to the backup file in the B2 bucket (e.g., mongodb/2025-11-22-0300_backup.gz)"
+                description: "Full path to the backup file in the B2 bucket (e.g., mongodb/mongodb-backup-20251012T033057.gz)"
                 required: true
                 type: string
 
@@ -31,9 +60,9 @@ jobs:
     restore-database:
         runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                aws_region: ["us-east-1"]
+        #strategy:
+        #matrix:
+        #aws_region: ["us-east-1"]
 
         steps:
             - name: Checkout repository
@@ -80,4 +109,5 @@ jobs:
 
               env:
                   ANSIBLE_CONFIG: ansible/ansible.cfg
-                  AWS_REGION: ${{ matrix.aws_region }}
+                  AWS_REGION: ${{ inputs.aws_region }}
+                  # AWS_REGION: ${{ matrix.aws_region }}

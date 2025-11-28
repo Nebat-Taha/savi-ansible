@@ -1,8 +1,13 @@
 # -----------------------------------------------------------------------------
 # ROLE: redis_restore - Redis Restore Automation
 #
-# NEW APPROACH: Relies on the user-provided 'backup_filename' variable passed 
+# APPROACH: Relies on the user-provided 'backup_filename' variable passed 
 # from the CI/CD workflow to ensure a specific, reliable restore point.
+# 
+# OPERATIONAL NOTE: This role uses a mandatory service STOP/START cycle.
+# - STOP is required to guarantee RPO=0 (no writes) and to allow the new 
+#   'dump.rdb' file to be replaced while the service is down.
+# - START is required because Redis only loads the RDB file from disk on startup.
 # -----------------------------------------------------------------------------
 ---
 # 1. DEPENDENCY SETUP
@@ -64,6 +69,8 @@
     state: started
   become: true
 
+
+# not for Savi, after this point 
 # ----------------- Verification -----------------
 
 # Verify that the test data from the backup is present after the restore.
