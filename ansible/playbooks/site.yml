@@ -28,9 +28,9 @@
   # Replace the old 'hosts:' line with this.
   hosts: tag_Service_mongodb:&region_{{ target_region | replace('-', '_') | default('UNDEFINED_REGION') }}
   become: yes
-  tags:
-    - mongodb_setup
   roles:
+    - mongodb_setup
+  tags:
     - mongodb_setup
  
 # -----------------------------------------------------------------------------
@@ -38,13 +38,13 @@
 # Purpose: Executes tasks listed in the 'mongodb_backup_final' role to create a 
 #          local archive of the database and upload it to the remote storage (B2).
 # -----------------------------------------------------------------------------
-#- name: Backup MongoDB instances
-#  hosts: "{{ target_region }}_mongodb_servers"  
-#  become: yes
-#  roles:
-#    - mongodb_backup
-#  tags:
-#    - mongodb_backup
+- name: Backup MongoDB instances
+  hosts: tag_Service_mongodb:&region_{{ target_region | replace('-', '_') | default('UNDEFINED_REGION') }} 
+  become: yes
+  roles:
+    - mongodb_backup
+  tags:
+    - mongodb_backup
 
 # -----------------------------------------------------------------------------
 # PLAY 3: Redis Setup
@@ -63,13 +63,13 @@
 # PLAY 4: Redis Backup Execution
 # Purpose: Executes tasks listed in the 'redis_backup' role to back up Redis instances.
 # -----------------------------------------------------------------------------
-#- name: Backup Redis instances
-#  hosts: "{{ target_region }}_redis_servers"   
-#  become: yes
-#  roles:
-#    - redis_backup
-#  tags:
-#    - redis_backup 
+- name: Backup Redis instances
+  hosts: tag_Service_redis:&region_{{ target_region | replace('-', '_') | default('UNDEFINED_REGION') }} 
+  become: yes
+  roles:
+    - redis_backup
+  tags:
+    - redis_backup 
 
 
 # -----------------------------------------------------------------------------
