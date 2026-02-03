@@ -5,16 +5,16 @@
 #   1. Dry-Run Job: Executes 'ansible-playbook --check --diff' across all regions.
 #   2. Production-Apply Job: Requires manual approval via GitHub Environments.
 #
-# STRATEGY: 
+# STRATEGY:
 #   - Uses a strategy matrix for regional isolation (us-east-1, eu-central-1).
 #   - Uses GitHub Environments as a gatekeeper for production changes.
 # -----------------------------------------------------------------------------
-name: Ansible Multi-Region CI/CD Pipeline
+name: Ansible Multi-Region CI/CD Production Pipeline
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   # -----------------------------------------------------------------------------
